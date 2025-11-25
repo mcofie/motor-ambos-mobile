@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart'; // 👈 Real 3D Viewer
 
 import 'package:motor_ambos/src/core/models/vehicle.dart';
 import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
@@ -24,12 +25,21 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
   bool _isPrimary = false;
   bool _isSaving = false;
 
-  bool get isEdit => widget.vehicle != null;
+  // Car Type Selection
+  int _selectedTypeIndex = 0;
+  final List<Map<String, dynamic>> _carTypes = [
+    {'label': 'Sedan', 'icon': Icons.directions_car_filled_rounded},
+    {'label': 'SUV', 'icon': Icons.airport_shuttle_rounded},
+    {'label': 'Truck', 'icon': Icons.local_shipping_rounded},
+    {'label': 'Bike', 'icon': Icons.two_wheeler_rounded},
+  ];
 
   // Theme Colors
   static const kBgColor = Color(0xFFF8FAFC);
   static const kDarkNavy = Color(0xFF0F172A);
   static const kSlateText = Color(0xFF64748B);
+
+  bool get isEdit => widget.vehicle != null;
 
   @override
   void initState() {
@@ -85,7 +95,9 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       if (mounted) context.pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save vehicle: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save vehicle: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -96,7 +108,6 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBgColor,
-      // Custom Header
       appBar: AppBar(
         backgroundColor: kBgColor,
         elevation: 0,
@@ -106,14 +117,15 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-              ),
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: kDarkNavy),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: kDarkNavy,
+            ),
             onPressed: () => context.pop(),
           ),
         ),
@@ -144,107 +156,131 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              physics: const BouncingScrollPhysics(),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Vehicle Details',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: kDarkNavy,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Help the provider identify your car.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: kSlateText,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
+                    // --- 1. INTERACTIVE 3D SHOWROOM ---
+                    _buildInteractiveShowroom(),
 
-                    // --- Form Fields ---
-                    _InputLabel(label: 'MAKE'),
-                    const SizedBox(height: 8),
-                    _StyledTextField(controller: _makeCtrl, hint: 'Toyota'),
+                    // --- 2. Car Type Selector ---
+                    _buildTypeSelector(),
 
                     const SizedBox(height: 24),
 
-                    _InputLabel(label: 'MODEL'),
-                    const SizedBox(height: 8),
-                    _StyledTextField(controller: _modelCtrl, hint: 'Corolla'),
-
-                    const SizedBox(height: 24),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _InputLabel(label: 'YEAR'),
-                              const SizedBox(height: 8),
-                              _StyledTextField(controller: _yearCtrl, hint: '2019', keyboardType: TextInputType.number),
-                            ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // --- Form Fields ---
+                          _InputLabel(label: 'MAKE'),
+                          const SizedBox(height: 8),
+                          _StyledTextField(
+                            controller: _makeCtrl,
+                            hint: 'Toyota',
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                          const SizedBox(height: 20),
+
+                          _InputLabel(label: 'MODEL'),
+                          const SizedBox(height: 8),
+                          _StyledTextField(
+                            controller: _modelCtrl,
+                            hint: 'Corolla',
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          Row(
                             children: [
-                              _InputLabel(label: 'LICENSE PLATE'),
-                              const SizedBox(height: 8),
-                              _StyledTextField(
-                                controller: _plateCtrl,
-                                hint: 'GR-5522-23',
-                                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _InputLabel(label: 'YEAR'),
+                                    const SizedBox(height: 8),
+                                    _StyledTextField(
+                                      controller: _yearCtrl,
+                                      hint: '2019',
+                                      keyboardType: TextInputType.number,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _InputLabel(label: 'LICENSE PLATE'),
+                                    const SizedBox(height: 8),
+                                    _StyledTextField(
+                                      controller: _plateCtrl,
+                                      hint: 'GR-5522-23',
+                                      validator: (val) =>
+                                          val == null || val.isEmpty
+                                          ? 'Required'
+                                          : null,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 24),
+                          const SizedBox(height: 20),
 
-                    _InputLabel(label: 'NICKNAME (OPTIONAL)'),
-                    const SizedBox(height: 8),
-                    _StyledTextField(controller: _nameCtrl, hint: 'e.g. Daily Driver'),
-
-                    const SizedBox(height: 32),
-
-                    // --- Primary Toggle ---
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.withOpacity(0.15)),
-                      ),
-                      child: SwitchListTile.adaptive(
-                        value: _isPrimary,
-                        activeColor: kDarkNavy,
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'Set as Primary Vehicle',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: kDarkNavy,
-                            fontSize: 14,
+                          _InputLabel(label: 'NICKNAME (OPTIONAL)'),
+                          const SizedBox(height: 8),
+                          _StyledTextField(
+                            controller: _nameCtrl,
+                            hint: 'e.g. Daily Driver',
                           ),
-                        ),
-                        subtitle: const Text(
-                          'Default for assistance requests',
-                          style: TextStyle(fontSize: 12, color: kSlateText),
-                        ),
-                        onChanged: (val) => setState(() => _isPrimary = val),
+
+                          const SizedBox(height: 24),
+
+                          // --- Primary Toggle ---
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.15),
+                              ),
+                            ),
+                            child: SwitchListTile.adaptive(
+                              value: _isPrimary,
+                              activeColor: kDarkNavy,
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text(
+                                'Set as Primary Vehicle',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: kDarkNavy,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              subtitle: const Text(
+                                'Default for assistance requests',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: kSlateText,
+                                ),
+                              ),
+                              onChanged: (val) =>
+                                  setState(() => _isPrimary = val),
+                            ),
+                          ),
+
+                          const SizedBox(height: 40),
+                        ],
                       ),
                     ),
                   ],
@@ -258,7 +294,9 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+              border: Border(
+                top: BorderSide(color: Colors.grey.withOpacity(0.1)),
+              ),
             ),
             child: SizedBox(
               width: double.infinity,
@@ -274,11 +312,21 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                   ),
                 ),
                 child: _isSaving
-                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
                     : Text(
-                  isEdit ? 'Save Changes' : 'Add Vehicle',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                        isEdit ? 'Save Changes' : 'Add Vehicle',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -286,10 +334,174 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       ),
     );
   }
+
+  Widget _buildInteractiveShowroom() {
+    // 🔴 UPDATED URL: Switched to "ToyCar" which is reliably hosted in the 'main' branch
+    const String carModelUrl =
+        'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/ToyCar/glTF-Binary/ToyCar.glb';
+
+    return Container(
+      height: 260,
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: Stack(
+          children: [
+            // Background Gradient
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF1E293B), kDarkNavy],
+                ),
+              ),
+            ),
+
+            // Background Grid (Tech effect)
+            Positioned.fill(
+              child: CustomPaint(painter: _GridBackgroundPainter()),
+            ),
+
+            // 3D Model Viewer
+            ModelViewer(
+              src: carModelUrl,
+              alt: "A 3D model of a car",
+              ar: true,
+              // Enable AR for supported devices
+              autoRotate: true,
+              cameraControls: true,
+              backgroundColor: Colors.transparent,
+              disableZoom: false,
+            ),
+
+            // Overlay Text
+            Positioned(
+              top: 20,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.view_in_ar_rounded,
+                      color: Colors.blueAccent,
+                      size: 14,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'INTERACTIVE 3D',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeSelector() {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(top: 16, left: 24, right: 24),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _carTypes.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final type = _carTypes[index];
+          final isSelected = _selectedTypeIndex == index;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedTypeIndex = index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: isSelected ? kDarkNavy : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? kDarkNavy : Colors.grey.withOpacity(0.2),
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: kDarkNavy.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    type['icon'] as IconData,
+                    size: 18,
+                    color: isSelected ? Colors.white : kSlateText,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    type['label'] as String,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected ? Colors.white : kSlateText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// PAINTERS & WIDGETS
+// -----------------------------------------------------------------------------
+
+class _GridBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.05)
+      ..strokeWidth = 1;
+
+    const double step = 40.0;
+
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _InputLabel extends StatelessWidget {
   final String label;
+
   const _InputLabel({required this.label});
 
   @override
@@ -332,7 +544,7 @@ class _StyledTextField extends StatelessWidget {
         validator: validator,
         style: const TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF0F172A), // Dark Navy
+          color: Color(0xFF0F172A),
         ),
         decoration: InputDecoration(
           hintText: hint,
@@ -340,7 +552,10 @@ class _StyledTextField extends StatelessWidget {
             color: Colors.grey[400],
             fontWeight: FontWeight.normal,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
           border: InputBorder.none,
         ),
       ),

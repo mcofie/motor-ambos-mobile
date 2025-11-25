@@ -8,6 +8,7 @@
 
     <application
         android:label="motor_ambos"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
