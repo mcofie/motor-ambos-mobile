@@ -43,6 +43,8 @@ dependencies:
   url_launcher: ^6.0.0
 
   heroicons: ^0.10.0
+  qr_flutter: ^4.1.0   # 👈 add this
+
 
   # Backend
   supabase_flutter: ^2.5.0

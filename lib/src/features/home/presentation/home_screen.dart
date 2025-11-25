@@ -1,7 +1,9 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:motor_ambos/src/core/services/membership_service.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
-import 'dart:math' as math; // still here in case you use it later
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,10 +15,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _firstName = 'Driver';
 
+  Map<String, dynamic>? _membership;
+  bool _loadingMembership = true;
+
   @override
   void initState() {
     super.initState();
     _loadUserName();
+    _loadMembership();
   }
 
   Future<void> _loadUserName() async {
@@ -56,15 +62,34 @@ class _HomeScreenState extends State<HomeScreen> {
       final parts = displayName.trim().split(RegExp(r'\s+'));
       final first = parts.isNotEmpty ? parts.first : displayName;
 
+      if (!mounted) return;
       setState(() {
         _firstName = first;
       });
     } catch (_) {
-      // On error just use the fallback
       final parts = fallbackName.trim().split(RegExp(r'\s+'));
       final first = parts.isNotEmpty ? parts.first : fallbackName;
+      if (!mounted) return;
       setState(() {
         _firstName = first;
+      });
+    }
+  }
+
+  Future<void> _loadMembership() async {
+    try {
+      final service = MembershipService();
+      final res = await service.getMembership();
+      if (!mounted) return;
+      setState(() {
+        _membership = res; // null means no membership yet
+        _loadingMembership = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _membership = null;
+        _loadingMembership = false;
       });
     }
   }
@@ -81,10 +106,37 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Mock membership data (you can later wire this too)
-    const membershipTier = 'Premium';
-    const membershipId = 'MBR-2048-001';
-    final expiryDate = DateTime.now().add(const Duration(days: 142));
+    final hasMembership =
+        !_loadingMembership &&
+        _membership != null &&
+        (_membership!['is_active'] != false);
+
+    // Safely derive membership info
+    String cardTier = 'PREMIUM';
+    String membershipId = '— — — —';
+    DateTime expiryDate = DateTime.now().add(const Duration(days: 365));
+    int callsUsed = 0;
+    double savings = 0.0;
+
+    if (hasMembership) {
+      final m = _membership!;
+      cardTier = (m['tier'] as String?)?.toUpperCase() ?? 'PREMIUM';
+      membershipId = (m['membership_id'] as String?) ?? '— — — —';
+
+      final rawExpiry = m['expiry_date'];
+      if (rawExpiry is String) {
+        expiryDate = DateTime.tryParse(rawExpiry) ?? expiryDate;
+      } else if (rawExpiry is DateTime) {
+        expiryDate = rawExpiry;
+      }
+
+      callsUsed = (m['calls_used'] as int?) ?? 0;
+      if (m['savings'] is num) {
+        savings = (m['savings'] as num).toDouble();
+      } else if (m['savings'] != null) {
+        savings = double.tryParse(m['savings'].toString()) ?? 0.0;
+      }
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -100,13 +152,89 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 24),
 
-              // 2. Membership Card (still mock data for now)
-              _MembershipCard(
-                tier: membershipTier,
-                membershipId: membershipId,
-                expiryDate: expiryDate,
-                callsUsedThisYear: 3,
-                estimatedSavings: 420.0,
+              // 2. Membership Card + Glass CTA overlay
+              Stack(
+                children: [
+                  _MembershipCard(
+                    tier: cardTier,
+                    membershipId: membershipId,
+                    expiryDate: expiryDate,
+                    callsUsedThisYear: callsUsed,
+                    estimatedSavings: savings,
+                  ),
+
+                  // Loading overlay (fade)
+                  if (_loadingMembership)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: Container(
+                          color: Colors.black.withOpacity(0.2),
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(),
+                        ),
+                      ),
+                    )
+                  else if (!hasMembership)
+                    // Glassmorphic "Become a Member" overlay
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+                          child: Container(
+                            color: Colors.black.withOpacity(0.35),
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Become a MotorAmbos Member',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Enjoy towing, rescue, fuel delivery and more — with one tap when you need help.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                FilledButton(
+                                  onPressed: () => context.go('/membership'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'View Membership Plans',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
 
               const SizedBox(height: 32),

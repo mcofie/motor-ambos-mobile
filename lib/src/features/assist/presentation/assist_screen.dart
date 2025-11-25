@@ -96,13 +96,13 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
               duration: const Duration(milliseconds: 300),
               child: isEmergency
                   ? _EmergencyBody(
-                selectedIssue: _selectedIssue,
-                onIssueSelected: (val) =>
-                    setState(() => _selectedIssue = val),
-                activeVehicle: activeVehicle,
-                vehiclesLoading: vehiclesLoading,
-                vehiclesError: vehiclesError,
-              )
+                      selectedIssue: _selectedIssue,
+                      onIssueSelected: (val) =>
+                          setState(() => _selectedIssue = val),
+                      activeVehicle: activeVehicle,
+                      vehiclesLoading: vehiclesLoading,
+                      vehiclesError: vehiclesError,
+                    )
                   : const _ServicesBody(),
             ),
           ),
@@ -187,12 +187,12 @@ class _ToggleItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             boxShadow: isSelected
                 ? [
-              BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ]
+                    BoxShadow(
+                      color: colorScheme.shadow.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                 : [],
           ),
           child: Row(
@@ -319,13 +319,15 @@ class _IssueCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Logic: Selected card uses "Secondary" (Brand Black), text is "OnSecondary"
-    final bgColor =
-    isSelected ? colorScheme.secondary : colorScheme.surfaceContainer;
+    final bgColor = isSelected
+        ? colorScheme.secondary
+        : colorScheme.surfaceContainer;
     final iconColor = isSelected
         ? colorScheme.primary
         : colorScheme.onSurface.withOpacity(0.7);
-    final textColor =
-    isSelected ? colorScheme.onSecondary : colorScheme.onSurface;
+    final textColor = isSelected
+        ? colorScheme.onSecondary
+        : colorScheme.onSurface;
     final borderColor = isSelected ? colorScheme.secondary : Colors.transparent;
 
     return GestureDetector(
@@ -340,11 +342,7 @@ class _IssueCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 28,
-              color: iconColor,
-            ),
+            Icon(icon, size: 28, color: iconColor),
             const SizedBox(height: 12),
             Text(
               label,
@@ -420,10 +418,7 @@ class _ActiveVehicleCard extends StatelessWidget {
         children: [
           Text(
             'Could not load vehicles',
-            style: TextStyle(
-              color: colorScheme.error,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: colorScheme.error, fontSize: 13),
           ),
           const SizedBox(height: 8),
           TextButton(
@@ -457,18 +452,12 @@ class _ActiveVehicleCard extends StatelessWidget {
             Expanded(
               child: Text(
                 'No vehicle selected.\nAdd a car to your garage to request assistance faster.',
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: colorScheme.onSurface, fontSize: 13),
               ),
             ),
             TextButton(
               onPressed: () => context.go('/garage'),
-              child: Text(
-                'Add',
-                style: TextStyle(color: colorScheme.primary),
-              ),
+              child: Text('Add', style: TextStyle(color: colorScheme.primary)),
             ),
           ],
         ),
@@ -533,10 +522,7 @@ class _ActiveVehicleCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => context.go('/garage'),
-            child: Text(
-              'Change',
-              style: TextStyle(color: colorScheme.primary),
-            ),
+            child: Text('Change', style: TextStyle(color: colorScheme.primary)),
           ),
         ],
       ),
@@ -588,13 +574,11 @@ class _StickyBottomBar extends StatelessWidget {
         child: FilledButton(
           onPressed: hasVehicle
               ? () {
-            context.push(
-              '/assist/request',
-              extra: {
-                'issue': selectedIssue,
-              },
-            );
-          }
+                  context.push(
+                    '/assist/request',
+                    extra: {'issue': selectedIssue},
+                  );
+                }
               : null, // disable if no vehicle
           style: FilledButton.styleFrom(
             backgroundColor: colorScheme.primary,
@@ -612,10 +596,7 @@ class _StickyBottomBar extends StatelessWidget {
               SizedBox(width: 10),
               Text(
                 'Confirm Location',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -625,6 +606,9 @@ class _StickyBottomBar extends StatelessWidget {
   }
 }
 
+//
+// SERVICES BODY
+//
 //
 // SERVICES BODY
 //
@@ -639,22 +623,22 @@ class _ServicesBody extends StatelessWidget {
       {
         'title': 'Car Wash',
         'desc': 'Interior & Exterior',
-        'icon': Icons.local_car_wash
+        'icon': Icons.local_car_wash,
       },
       {
         'title': 'Oil Change',
         'desc': 'Synthetic & Standard',
-        'icon': Icons.oil_barrel
+        'icon': Icons.oil_barrel,
       },
       {
         'title': 'Diagnostics',
         'desc': 'Check engine light',
-        'icon': Icons.monitor_heart
+        'icon': Icons.monitor_heart,
       },
       {
         'title': 'Detailing',
         'desc': 'Deep clean & polish',
-        'icon': Icons.cleaning_services
+        'icon': Icons.cleaning_services,
       },
     ];
 
@@ -669,21 +653,27 @@ class _ServicesBody extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border:
-            Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withOpacity(0.5),
+            ),
           ),
           child: Row(
             children: [
+              // Leading icon
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainer,
                   shape: BoxShape.circle,
                 ),
-                child:
-                Icon(s['icon'] as IconData, color: colorScheme.onSurface),
+                child: Icon(
+                  s['icon'] as IconData,
+                  color: colorScheme.onSurface,
+                ),
               ),
               const SizedBox(width: 16),
+
+              // Title + description
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -695,6 +685,7 @@ class _ServicesBody extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       s['desc'] as String,
                       style: TextStyle(
@@ -705,10 +696,28 @@ class _ServicesBody extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: colorScheme.onSurfaceVariant,
+
+              const SizedBox(width: 8),
+
+              // "Coming soon" pill
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Coming soon',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.primary,
+                    letterSpacing: 0.3,
+                  ),
+                ),
               ),
             ],
           ),
