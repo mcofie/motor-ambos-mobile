@@ -16,6 +16,10 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
   int _modeIndex = 0; // 0 = Emergency, 1 = Services
   String _selectedIssue = 'Towing'; // Default selection
 
+  /// Vehicle explicitly chosen in this screen (via bottom sheet).
+  /// If null, we fall back to primary/first vehicle.
+  Vehicle? _selectedVehicle;
+
   @override
   Widget build(BuildContext context) {
     // Theme Colors
@@ -29,13 +33,16 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
     final vehicles = vehiclesAsync.value ?? <Vehicle>[];
 
     // 🏎 Pick primary vehicle logic
-    Vehicle? activeVehicle;
+    Vehicle? primaryVehicle;
     if (vehicles.isNotEmpty) {
-      activeVehicle = vehicles.firstWhere(
+      primaryVehicle = vehicles.firstWhere(
         (v) => v.isPrimary,
         orElse: () => vehicles.first,
       );
     }
+
+    // Effective vehicle = user-selected (via sheet) OR primary fallback
+    final Vehicle? effectiveVehicle = _selectedVehicle ?? primaryVehicle;
 
     final vehiclesLoading = vehiclesAsync.isLoading;
     final vehiclesError = vehiclesAsync.hasError ? vehiclesAsync.error : null;
@@ -60,7 +67,6 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  // Optional: Profile Icon or Notification Icon could go here
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -96,9 +102,12 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                         selectedIssue: _selectedIssue,
                         onIssueSelected: (val) =>
                             setState(() => _selectedIssue = val),
-                        activeVehicle: activeVehicle,
+                        activeVehicle: effectiveVehicle,
                         vehiclesLoading: vehiclesLoading,
                         vehiclesError: vehiclesError,
+                        onChangeVehicle: vehicles.isNotEmpty
+                            ? () => _showVehiclePicker(vehicles)
+                            : null,
                       )
                     : const _ServicesBody(),
               ),
@@ -108,12 +117,160 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
             if (isEmergency)
               _StickyBottomBar(
                 selectedIssue: _selectedIssue,
-                hasVehicle: activeVehicle != null,
+                hasVehicle: effectiveVehicle != null,
+                onContinue: effectiveVehicle == null
+                    ? null
+                    : () {
+                        final summary = {
+                          'label': effectiveVehicle.displayLabel,
+                          'plate': effectiveVehicle.plate,
+                          'year': effectiveVehicle.year,
+                        };
+
+                        context.push(
+                          '/assist/request',
+                          extra: {
+                            'issue': _selectedIssue,
+                            'vehicleId': effectiveVehicle.id,
+                            'vehicleSummary': summary,
+                          },
+                        );
+                      },
               ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _showVehiclePicker(List<Vehicle> vehicles) async {
+    final selected = await showModalBottomSheet<Vehicle>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        const kDarkNavy = Color(0xFF0F172A);
+        const kSlateText = Color(0xFF64748B);
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Choose vehicle',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: kDarkNavy,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Select the vehicle that needs help.',
+                    style: TextStyle(fontSize: 13, color: kSlateText),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: vehicles.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (_, index) {
+                      final v = vehicles[index];
+                      final title = v.displayLabel;
+                      final subtitle =
+                          "${v.plate ?? 'No Plate'} • ${v.year ?? 'Year N/A'}";
+
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () => Navigator.pop(ctx, v),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.25),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.directions_car_filled_rounded,
+                                  color: kDarkNavy,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: kDarkNavy,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      subtitle,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: kSlateText,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (selected != null) {
+      setState(() => _selectedVehicle = selected);
+    }
   }
 }
 
@@ -203,6 +360,7 @@ class _EmergencyBody extends StatelessWidget {
   final Vehicle? activeVehicle;
   final bool vehiclesLoading;
   final Object? vehiclesError;
+  final VoidCallback? onChangeVehicle;
 
   const _EmergencyBody({
     required this.selectedIssue,
@@ -210,6 +368,7 @@ class _EmergencyBody extends StatelessWidget {
     required this.activeVehicle,
     required this.vehiclesLoading,
     required this.vehiclesError,
+    required this.onChangeVehicle,
   });
 
   @override
@@ -302,7 +461,7 @@ class _EmergencyBody extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'For Vehicle',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: kDarkNavy,
@@ -315,6 +474,7 @@ class _EmergencyBody extends StatelessWidget {
             vehicle: activeVehicle,
             isLoading: vehiclesLoading,
             error: vehiclesError,
+            onChangeVehicle: onChangeVehicle,
           ),
 
           const SizedBox(height: 40),
@@ -428,11 +588,13 @@ class _ActiveVehicleCard extends StatelessWidget {
   final Vehicle? vehicle;
   final bool isLoading;
   final Object? error;
+  final VoidCallback? onChangeVehicle;
 
   const _ActiveVehicleCard({
     required this.vehicle,
     required this.isLoading,
     required this.error,
+    required this.onChangeVehicle,
   });
 
   @override
@@ -551,7 +713,7 @@ class _ActiveVehicleCard extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () => context.go('/garage'),
+            onPressed: onChangeVehicle ?? () => context.go('/garage'),
             child: const Text(
               "Change",
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -569,10 +731,12 @@ class _ActiveVehicleCard extends StatelessWidget {
 class _StickyBottomBar extends StatelessWidget {
   final String selectedIssue;
   final bool hasVehicle;
+  final VoidCallback? onContinue;
 
   const _StickyBottomBar({
     required this.selectedIssue,
     required this.hasVehicle,
+    required this.onContinue,
   });
 
   @override
@@ -587,12 +751,7 @@ class _StickyBottomBar extends StatelessWidget {
         width: double.infinity,
         height: 56,
         child: ElevatedButton(
-          onPressed: hasVehicle
-              ? () => context.push(
-                  '/assist/request',
-                  extra: {'issue': selectedIssue},
-                )
-              : null,
+          onPressed: hasVehicle ? onContinue : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0F172A), // Dark Navy
             foregroundColor: Colors.white,
@@ -619,7 +778,7 @@ class _StickyBottomBar extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// 5. SERVICES BODY (RESTORED)
+// 5. SERVICES BODY (unchanged)
 // -----------------------------------------------------------------------------
 class _ServicesBody extends StatelessWidget {
   const _ServicesBody();
@@ -674,18 +833,15 @@ class _ServicesBody extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Leading icon
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(s['icon'] as IconData, color: kDarkNavy, size: 20),
               ),
               const SizedBox(width: 16),
-
-              // Title + description
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -706,10 +862,7 @@ class _ServicesBody extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(width: 8),
-
-              // "Coming soon" pill
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,

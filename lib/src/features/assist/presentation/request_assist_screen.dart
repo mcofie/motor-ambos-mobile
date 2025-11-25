@@ -7,9 +7,21 @@ import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
 
 class RequestAssistScreen extends ConsumerStatefulWidget {
-  const RequestAssistScreen({super.key, required this.issue});
+  const RequestAssistScreen({
+    super.key,
+    required this.issue,
+    this.vehicleId,
+    this.vehicleSummary,
+  });
 
   final String issue;
+
+  /// Optional: vehicle explicitly selected on the Assist screen
+  final String? vehicleId;
+
+  /// Optional: summary info passed from Assist screen
+  /// Example: { 'label': 'Toyota Corolla', 'plate': 'GR-1234-24', 'year': '2020' }
+  final Map<String, dynamic>? vehicleSummary;
 
   @override
   ConsumerState<RequestAssistScreen> createState() =>
@@ -112,7 +124,10 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
     return 'rescue';
   }
 
-  Future<void> _handleFindProviders() async {
+  Future<void> _handleFindProviders({
+    required Vehicle? activeVehicle,
+    required Map<String, dynamic>? effectiveVehicleSummary,
+  }) async {
     if (_position == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please share your location first.')),
@@ -160,6 +175,9 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
           'driverPhone': _driverPhone,
           'lat': _position!.latitude,
           'lng': _position!.longitude,
+          // 🚗 Vehicle context
+          'vehicleId': widget.vehicleId ?? activeVehicle?.id,
+          'vehicleSummary': effectiveVehicleSummary,
         },
       );
     } catch (e) {
@@ -175,21 +193,60 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 🔁 Get Active Vehicle Logic (Same as Assist Screen)
+    // 🔁 Vehicles from Riverpod (used as fallback if no vehicle was passed)
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final vehicles = vehiclesAsync.value ?? <Vehicle>[];
-    Vehicle? activeVehicle;
+
+    Vehicle? primaryVehicle;
     if (vehicles.isNotEmpty) {
-      activeVehicle = vehicles.firstWhere(
+      primaryVehicle = vehicles.firstWhere(
         (v) => v.isPrimary,
         orElse: () => vehicles.first,
       );
     }
 
+    // Find explicit vehicle by id if provided
+    Vehicle? explicitVehicle;
+    if (widget.vehicleId != null && vehicles.isNotEmpty) {
+      try {
+        explicitVehicle = vehicles.firstWhere((v) => v.id == widget.vehicleId);
+      } catch (_) {
+        explicitVehicle = null;
+      }
+    }
+
+    final Vehicle? activeVehicle = explicitVehicle ?? primaryVehicle;
+
+    // Build effective vehicle summary for display & passing along
+    Map<String, dynamic>? effectiveVehicleSummary;
+    if (widget.vehicleSummary != null) {
+      effectiveVehicleSummary = widget.vehicleSummary;
+    } else if (activeVehicle != null) {
+      effectiveVehicleSummary = {
+        'label': activeVehicle.displayLabel,
+        'plate': activeVehicle.plate,
+        'year': activeVehicle.year,
+      };
+    }
+
     final hasLocation = _position != null;
-    final vehicleText = activeVehicle != null
-        ? "${activeVehicle.displayLabel} • ${activeVehicle.plate ?? ''}"
-        : "No vehicle selected";
+
+    final vehicleText = (() {
+      if (effectiveVehicleSummary != null) {
+        final label = effectiveVehicleSummary['label']?.toString() ?? '';
+        final plate = effectiveVehicleSummary['plate']?.toString() ?? '';
+        if (label.isEmpty && plate.isEmpty) {
+          return "No vehicle selected";
+        }
+        return plate.isEmpty ? label : "$label • $plate";
+      }
+
+      if (activeVehicle != null) {
+        return "${activeVehicle.displayLabel} • ${activeVehicle.plate ?? ''}";
+      }
+
+      return "No vehicle selected";
+    })();
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -226,8 +283,8 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
             ],
           ),
           child: Column(
-            children: [
-              const Text(
+            children: const [
+              Text(
                 'Motor Ambos',
                 style: TextStyle(
                   color: kDarkNavy,
@@ -237,7 +294,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
               ),
               Text(
                 'STEP 3: CONFIRM',
-                style: const TextStyle(
+                style: TextStyle(
                   color: kSlateText,
                   fontSize: 8,
                   fontWeight: FontWeight.bold,
@@ -341,9 +398,9 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                             ],
                           ),
                         ),
-                        // Edit Button
+                        // Edit Button (go back to Assist)
                         TextButton(
-                          onPressed: () => context.pop(), // Go back to edit
+                          onPressed: () => context.pop(),
                           child: const Text('Edit'),
                         ),
                       ],
@@ -352,7 +409,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
 
                   const SizedBox(height: 24),
 
-                  // GPS Coordinates Display
+                  // GPS / Location Display
                   if (hasLocation)
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -391,8 +448,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
                                     color: kDarkNavy,
-                                    fontFamily:
-                                        'Courier', // Monospace for coords looks techy
+                                    fontFamily: 'Courier',
                                   ),
                                 ),
                               ],
@@ -417,14 +473,14 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
-                        children: [
-                          const Icon(
+                        children: const [
+                          Icon(
                             Icons.location_disabled_rounded,
                             color: Colors.red,
                             size: 28,
                           ),
-                          const SizedBox(width: 16),
-                          const Expanded(
+                          SizedBox(width: 16),
+                          Expanded(
                             child: Text(
                               'Location not detected.\nPlease share your location to proceed.',
                               style: TextStyle(
@@ -439,13 +495,16 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
 
                   const SizedBox(height: 24),
 
-                  // Location & Action
+                  // Action Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
                       onPressed: hasLocation
-                          ? _handleFindProviders
+                          ? () => _handleFindProviders(
+                              activeVehicle: activeVehicle,
+                              effectiveVehicleSummary: effectiveVehicleSummary,
+                            )
                           : _fetchLocation,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: kDarkNavy,
@@ -508,7 +567,6 @@ class _MockMapPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Light grey map background
     const mapBgColor = Color(0xFFE5E7EB);
     const roadColor = Colors.white;
 
@@ -517,12 +575,10 @@ class _MockMapPreview extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Draw Roads
           CustomPaint(
             size: Size.infinite,
             painter: _GridPainter(color: roadColor),
           ),
-          // Pulse Animation
           AnimatedBuilder(
             animation: controller,
             builder: (context, child) {
@@ -544,11 +600,10 @@ class _MockMapPreview extends StatelessWidget {
               );
             },
           ),
-          // User Pin
           Container(
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
-              color: Color(0xFF0F172A), // Dark Navy Pin
+              color: Color(0xFF0F172A),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -579,7 +634,6 @@ class _GridPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Mock Roads
     final path = Path();
     path.moveTo(-50, size.height * 0.4);
     path.quadraticBezierTo(

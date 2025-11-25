@@ -99,13 +99,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AssistScreen(),
           ),
           GoRoute(
-            path: '/assist/request',
             name: 'assist-request',
+            path: '/assist/request',
             builder: (context, state) {
-              final extra = state.extra as Map<String, dynamic>?;
-              final issue = extra?['issue'] as String? ?? 'Towing';
+              // extra expected as a Map<String, dynamic>
+              final extra = state.extra as Map<String, dynamic>? ?? {};
 
-              return RequestAssistScreen(issue: issue);
+              final issue = extra['issue'] as String? ?? 'Towing';
+              final vehicleId = extra['vehicleId'] as String?;
+              final vehicleSummary =
+                  extra['vehicleSummary'] as Map<String, dynamic>?;
+
+              return RequestAssistScreen(
+                issue: issue,
+                vehicleId: vehicleId,
+                vehicleSummary: vehicleSummary,
+              );
             },
           ),
           GoRoute(
