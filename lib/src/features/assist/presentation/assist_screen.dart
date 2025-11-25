@@ -1,68 +1,359 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class AssistScreen extends StatefulWidget {
+import 'package:motor_ambos/src/core/models/vehicle.dart';
+import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
+
+class AssistScreen extends ConsumerStatefulWidget {
   const AssistScreen({super.key});
 
   @override
-  State<AssistScreen> createState() => _AssistScreenState();
+  ConsumerState<AssistScreen> createState() => _AssistScreenState();
 }
 
-class _AssistScreenState extends State<AssistScreen> {
+class _AssistScreenState extends ConsumerState<AssistScreen> {
   int _modeIndex = 0; // 0 = Emergency, 1 = Services
   String _selectedIssue = 'Towing';
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isEmergency = _modeIndex == 0;
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Text(
-              'How can we help today?',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              isEmergency
-                  ? 'Select the kind of roadside issue you’re facing.'
-                  : 'Book a convenient service for your car.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
+    // 🔁 Vehicles from Riverpod
+    final vehiclesAsync = ref.watch(vehiclesProvider);
+    final vehicles = vehiclesAsync.value ?? <Vehicle>[];
 
-            // Mode toggle
-            _AssistModeToggle(
-              selectedIndex: _modeIndex,
-              onChanged: (index) {
-                setState(() {
-                  _modeIndex = index;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
+    // 🏎 Pick primary vehicle (fallback to first if none)
+    Vehicle? activeVehicle;
+    for (final v in vehicles) {
+      if (v.isPrimary) {
+        activeVehicle = v;
+        break;
+      }
+    }
+    activeVehicle ??= vehicles.isNotEmpty ? vehicles.first : null;
 
-            if (isEmergency)
-              _EmergencyAssistSection(
+    final vehiclesLoading = vehiclesAsync.isLoading;
+    final vehiclesError = vehiclesAsync.hasError ? vehiclesAsync.error : null;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: colorScheme.onSurface,
+          ),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+        ),
+        centerTitle: true,
+        title: Text(
+          'Assistance',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // 1. Top Section: Toggle & Context
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              children: [
+                _ModernToggle(
+                  selectedIndex: _modeIndex,
+                  onChanged: (index) => setState(() => _modeIndex = index),
+                ),
+                const SizedBox(height: 20),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    isEmergency
+                        ? 'What issue are you facing?'
+                        : 'Schedule vehicle maintenance',
+                    key: ValueKey(isEmergency),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 22,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 2. Scrollable Content
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: isEmergency
+                  ? _EmergencyBody(
                 selectedIssue: _selectedIssue,
-                onIssueSelected: (issue) {
-                  setState(() {
-                    _selectedIssue = issue;
-                  });
-                },
+                onIssueSelected: (val) =>
+                    setState(() => _selectedIssue = val),
+                activeVehicle: activeVehicle,
+                vehiclesLoading: vehiclesLoading,
+                vehiclesError: vehiclesError,
               )
-            else
-              const _ServiceBookingSection(),
+                  : const _ServicesBody(),
+            ),
+          ),
+
+          // 3. Bottom Sticky Action Bar (Only for Emergency)
+          if (isEmergency)
+            _StickyBottomBar(
+              selectedIssue: _selectedIssue,
+              hasVehicle: activeVehicle != null,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+//
+// CUSTOM TOGGLE
+//
+class _ModernToggle extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  const _ModernToggle({required this.selectedIndex, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer, // Theme-aware grey
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Row(
+        children: [
+          _ToggleItem(
+            label: 'Emergency',
+            icon: Icons.warning_amber_rounded,
+            isSelected: selectedIndex == 0,
+            onTap: () => onChanged(0),
+          ),
+          _ToggleItem(
+            label: 'Services',
+            icon: Icons.calendar_month_rounded,
+            isSelected: selectedIndex == 1,
+            onTap: () => onChanged(1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ToggleItem({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: isSelected ? colorScheme.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: isSelected
+                ? [
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+//
+// EMERGENCY BODY
+//
+class _EmergencyBody extends StatelessWidget {
+  final String selectedIssue;
+  final ValueChanged<String> onIssueSelected;
+
+  final Vehicle? activeVehicle;
+  final bool vehiclesLoading;
+  final Object? vehiclesError;
+
+  const _EmergencyBody({
+    required this.selectedIssue,
+    required this.onIssueSelected,
+    required this.activeVehicle,
+    required this.vehiclesLoading,
+    required this.vehiclesError,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final issues = [
+      {'id': 'Towing', 'icon': Icons.local_shipping_outlined},
+      {'id': 'Flat tyre', 'icon': Icons.tire_repair},
+      {'id': 'Jumpstart', 'icon': Icons.bolt_outlined},
+      {'id': 'Engine', 'icon': Icons.build_circle_outlined},
+      {'id': 'Fuel', 'icon': Icons.local_gas_station_outlined},
+      {'id': 'Other', 'icon': Icons.support_agent},
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+          GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: issues.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.9,
+            ),
+            itemBuilder: (context, index) {
+              final item = issues[index];
+              final isSelected = selectedIssue == item['id'];
+              return _IssueCard(
+                label: item['id'] as String,
+                icon: item['icon'] as IconData,
+                isSelected: isSelected,
+                onTap: () => onIssueSelected(item['id'] as String),
+              );
+            },
+          ),
+          const SizedBox(height: 30),
+          const Text(
+            'For Vehicle',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+
+          // 🔧 Active vehicle card wired to real data
+          _ActiveVehicleCard(
+            vehicle: activeVehicle,
+            isLoading: vehiclesLoading,
+            error: vehiclesError,
+          ),
+
+          const SizedBox(height: 100), // Space for bottom bar
+        ],
+      ),
+    );
+  }
+}
+
+class _IssueCard extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _IssueCard({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Logic: Selected card uses "Secondary" (Brand Black), text is "OnSecondary"
+    final bgColor =
+    isSelected ? colorScheme.secondary : colorScheme.surfaceContainer;
+    final iconColor = isSelected
+        ? colorScheme.primary
+        : colorScheme.onSurface.withOpacity(0.7);
+    final textColor =
+    isSelected ? colorScheme.onSecondary : colorScheme.onSurface;
+    final borderColor = isSelected ? colorScheme.secondary : Colors.transparent;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor, width: 2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 28,
+              color: iconColor,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
           ],
         ),
       ),
@@ -70,532 +361,359 @@ class _AssistScreenState extends State<AssistScreen> {
   }
 }
 
-class _AssistModeToggle extends StatelessWidget {
-  const _AssistModeToggle({
-    required this.selectedIndex,
-    required this.onChanged,
-  });
+class _ActiveVehicleCard extends StatelessWidget {
+  final Vehicle? vehicle;
+  final bool isLoading;
+  final Object? error;
 
-  final int selectedIndex;
-  final ValueChanged<int> onChanged;
+  const _ActiveVehicleCard({
+    required this.vehicle,
+    required this.isLoading,
+    required this.error,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final labels = ['Emergency', 'Services'];
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        children: List.generate(labels.length, (index) {
-          final isSelected = selectedIndex == index;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding:
-                const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colorScheme.surface
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(999),
-                  boxShadow: isSelected
-                      ? [
-                    BoxShadow(
-                      color:
-                      Colors.black.withOpacity(0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    labels[index],
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w400,
-                      color: isSelected
-                          ? colorScheme.onSurface
-                          : colorScheme.onSurfaceVariant,
-                    ),
+    if (isLoading) {
+      // Skeleton shimmer-ish state
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.secondary,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: colorScheme.onSecondary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _skeletonBar(colorScheme.onSecondary, width: 140),
+                  const SizedBox(height: 8),
+                  _skeletonBar(
+                    colorScheme.onSecondary.withOpacity(0.6),
+                    width: 100,
+                    height: 10,
                   ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (error != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Could not load vehicles',
+            style: TextStyle(
+              color: colorScheme.error,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => context.go('/garage'),
+            child: const Text('Open Garage'),
+          ),
+        ],
+      );
+    }
+
+    // ✅ Fix: copy to local var for promotion
+    final v = vehicle;
+    if (v == null) {
+      // No vehicle configured
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.5),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.directions_car_filled_outlined,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No vehicle selected.\nAdd a car to your garage to request assistance faster.',
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 13,
                 ),
               ),
             ),
-          );
-        }),
+            TextButton(
+              onPressed: () => context.go('/garage'),
+              child: Text(
+                'Add',
+                style: TextStyle(color: colorScheme.primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // ✅ Vehicle is present -> show primary / active vehicle
+    final label = v.displayLabel;
+    final plate = v.plate?.trim();
+    final year = v.year?.trim();
+    final secondaryLine = [
+      if (plate != null && plate.isNotEmpty) plate,
+      if (year != null && year.isNotEmpty) '• $year',
+      if (v.isPrimary) '• Primary',
+    ].join('  ');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.secondary, // Brand Accent (Black)
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.onSecondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.directions_car_filled,
+              color: colorScheme.onSecondary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: colorScheme.onSecondary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                if (secondaryLine.isNotEmpty)
+                  Text(
+                    secondaryLine,
+                    style: TextStyle(
+                      color: colorScheme.onSecondary.withOpacity(0.7),
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => context.go('/garage'),
+            child: Text(
+              'Change',
+              style: TextStyle(color: colorScheme.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _skeletonBar(Color color, {double width = 120, double height = 12}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(999),
       ),
     );
   }
 }
 
-class _EmergencyAssistSection extends StatelessWidget {
-  const _EmergencyAssistSection({
-    required this.selectedIssue,
-    required this.onIssueSelected,
-  });
-
+//
+// STICKY BOTTOM BAR
+//
+class _StickyBottomBar extends StatelessWidget {
   final String selectedIssue;
-  final ValueChanged<String> onIssueSelected;
+  final bool hasVehicle;
+
+  const _StickyBottomBar({
+    required this.selectedIssue,
+    required this.hasVehicle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
-    final issues = <_EmergencyIssue>[
-      _EmergencyIssue(
-        key: 'Towing',
-        icon: Icons.local_shipping_outlined,
-        label: 'Towing',
-      ),
-      _EmergencyIssue(
-        key: 'Flat tyre',
-        icon: Icons.tire_repair,
-        label: 'Flat tyre',
-      ),
-      _EmergencyIssue(
-        key: 'Jumpstart',
-        icon: Icons.bolt_outlined,
-        label: 'Jumpstart',
-      ),
-      _EmergencyIssue(
-        key: 'Engine trouble',
-        icon: Icons.build_outlined,
-        label: 'Engine\ntrouble',
-      ),
-      _EmergencyIssue(
-        key: 'Battery',
-        icon: Icons.battery_charging_full_outlined,
-        label: 'Battery',
-      ),
-      _EmergencyIssue(
-        key: 'Other',
-        icon: Icons.more_horiz,
-        label: 'Other',
-      ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'What seems to be the problem?',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 34),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
           ),
-        ),
-        const SizedBox(height: 12),
-
-        // Issues grid
-        GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: issues.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 0.95,
-          ),
-          itemBuilder: (context, index) {
-            final issue = issues[index];
-            final isSelected = selectedIssue == issue.key;
-            return _EmergencyIssueTile(
-              issue: issue,
-              isSelected: isSelected,
-              onTap: () => onIssueSelected(issue.key),
-            );
-          },
-        ),
-        const SizedBox(height: 20),
-
-        Text(
-          'Selected vehicle',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        const _SelectedVehicleCard(),
-
-        const SizedBox(height: 20),
-
-        FilledButton.icon(
-          onPressed: () {
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: FilledButton(
+          onPressed: hasVehicle
+              ? () {
             context.push(
               '/assist/request',
               extra: {
                 'issue': selectedIssue,
               },
             );
-          },
-          icon: const Icon(Icons.my_location_outlined),
-          label: const Text('Confirm location & continue'),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'We’ll use your GPS to find the closest verified provider for this issue.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EmergencyIssue {
-  final String key;
-  final IconData icon;
-  final String label;
-
-  const _EmergencyIssue({
-    required this.key,
-    required this.icon,
-    required this.label,
-  });
-}
-
-class _EmergencyIssueTile extends StatelessWidget {
-  const _EmergencyIssueTile({
-    required this.issue,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final _EmergencyIssue issue;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colorScheme.primaryContainer
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? colorScheme.primary
-                : colorScheme.outlineVariant.withOpacity(0.7),
-            width: isSelected ? 1.3 : 1,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              issue.icon,
-              size: 26,
-              color: isSelected
-                  ? colorScheme.onPrimaryContainer
-                  : colorScheme.primary,
+          }
+              : null, // disable if no vehicle
+          style: FilledButton.styleFrom(
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
             ),
-            const SizedBox(height: 8),
-            Text(
-              issue.label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight:
-                isSelected ? FontWeight.w600 : FontWeight.w500,
+            elevation: 0,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.my_location_sharp, size: 20),
+              SizedBox(width: 10),
+              Text(
+                'Confirm Location',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SelectedVehicleCard extends StatelessWidget {
-  const _SelectedVehicleCard();
+//
+// SERVICES BODY
+//
+class _ServicesBody extends StatelessWidget {
+  const _ServicesBody();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    // TODO: Replace with actual selected vehicle state (from Garage / profile)
-    const vehicleName = 'Toyota Corolla';
-    const vehiclePlate = 'GR 1234-24';
-    const vehicleTag = 'Primary car';
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () {
-        // Later: open vehicle picker & garage
-        context.go('/garage');
+    final services = [
+      {
+        'title': 'Car Wash',
+        'desc': 'Interior & Exterior',
+        'icon': Icons.local_car_wash
       },
-      child: Ink(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.6),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.directions_car_filled_outlined,
-                color: colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    vehicleName,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    vehiclePlate,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.secondaryContainer
-                          .withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      vehicleTag,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.outline,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ServiceBookingSection extends StatelessWidget {
-  const _ServiceBookingSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    final services = <_ServiceItem>[
-      const _ServiceItem(
-        title: 'Car wash',
-        subtitle: 'Basic, premium, or full interior & exterior.',
-        icon: Icons.local_car_wash_outlined,
-      ),
-      const _ServiceItem(
-        title: 'Oil change',
-        subtitle: 'Keep your engine healthy with regular oil changes.',
-        icon: Icons.oil_barrel_outlined,
-      ),
-      const _ServiceItem(
-        title: 'Fuel delivery',
-        subtitle: 'Ran low? We’ll top you up where you are.',
-        icon: Icons.local_gas_station_outlined,
-      ),
-      const _ServiceItem(
-        title: 'Battery service',
-        subtitle: 'Jumpstart or full replacement when needed.',
-        icon: Icons.battery_full_outlined,
-      ),
-      const _ServiceItem(
-        title: 'Tyre service',
-        subtitle: 'Puncture repairs, swaps, or alignment (where available).',
-        icon: Icons.tire_repair,
-      ),
+      {
+        'title': 'Oil Change',
+        'desc': 'Synthetic & Standard',
+        'icon': Icons.oil_barrel
+      },
+      {
+        'title': 'Diagnostics',
+        'desc': 'Check engine light',
+        'icon': Icons.monitor_heart
+      },
+      {
+        'title': 'Detailing',
+        'desc': 'Deep clean & polish',
+        'icon': Icons.cleaning_services
+      },
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Book a service',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      itemCount: services.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final s = services[index];
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border:
+            Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Perfect for planned maintenance or convenience services.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: services.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final service = services[index];
-            return _ServiceCard(service: service);
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _ServiceItem {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _ServiceItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-}
-
-class _ServiceCard extends StatelessWidget {
-  const _ServiceCard({required this.service});
-
-  final _ServiceItem service;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () {
-        // Later: push to /assist/service/:id -> choose vehicle, time, location
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Booking flow for "${service.title}" coming soon.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onInverseSurface,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainer,
+                  shape: BoxShape.circle,
+                ),
+                child:
+                Icon(s['icon'] as IconData, color: colorScheme.onSurface),
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s['title'] as String,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      s['desc'] as String,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
         );
       },
-      child: Ink(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.6),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                service.icon,
-                color: colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment:
-                CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    service.title,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    service.subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'From GHS —', // TODO: pricing from Supabase
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: () {
-                // Same as card tap for now
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Booking flow for "${service.title}" coming soon.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onInverseSurface,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Schedule'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

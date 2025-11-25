@@ -1,127 +1,132 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:motor_ambos/src/features/membership/application/membership_providers.dart';
-import 'package:motor_ambos/src/features/membership/domain/membership.dart';
+// MOCKING DOMAIN & PROVIDER
+class Membership {
+  final String id;
+  final String tier;
+  final DateTime memberSince;
+  final DateTime expiry;
+  final int includedCallsPerYear;
+  final int callsUsedThisYear;
+  final double estimatedSavings;
+  final int freeTowRadiusKm;
+  final bool prioritySupport;
+
+  Membership({
+    required this.id,
+    required this.tier,
+    required this.memberSince,
+    required this.expiry,
+    required this.includedCallsPerYear,
+    required this.callsUsedThisYear,
+    required this.estimatedSavings,
+    required this.freeTowRadiusKm,
+    required this.prioritySupport,
+  });
+}
+
+final membershipProvider = Provider<Membership>((ref) {
+  return Membership(
+    id: 'MBR-8821-X99',
+    tier: 'Premium',
+    memberSince: DateTime(2023, 1, 15),
+    expiry: DateTime.now().add(const Duration(days: 120)),
+    includedCallsPerYear: 5,
+    callsUsedThisYear: 2,
+    estimatedSavings: 1450.00,
+    freeTowRadiusKm: 50,
+    prioritySupport: true,
+  );
+});
 
 class MembershipScreen extends ConsumerWidget {
   const MembershipScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final membership = ref.watch(membershipProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Membership'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'My Membership',
+          style: TextStyle(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.bold
+          ),
+        ),
+        leading: BackButton(color: colorScheme.onSurface),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _MembershipHeader(membership: membership),
+            // 1. The Premium Card
+            _PremiumMembershipCard(membership: membership),
+
             const SizedBox(height: 24),
-            _BenefitsSection(membership: membership),
-            const SizedBox(height: 24),
-            _UsageSection(membership: membership),
-            const SizedBox(height: 24),
-            _PlanActionsSection(membership: membership),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
-class _MembershipHeader extends StatelessWidget {
-  const _MembershipHeader({required this.membership});
-
-  final Membership membership;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final expiryText =
-        '${membership.expiry.day.toString().padLeft(2, '0')}/${membership.expiry.month.toString().padLeft(2, '0')}/${membership.expiry.year}';
-    final memberSinceText =
-        '${membership.memberSince.day.toString().padLeft(2, '0')}/${membership.memberSince.month.toString().padLeft(2, '0')}/${membership.memberSince.year}';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [cs.primary, cs.primaryContainer],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: DefaultTextStyle(
-        style: theme.textTheme.bodyMedium!.copyWith(
-          color: cs.onPrimary,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // top row
+            // 2. Usage Dashboard (Visual Data)
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${membership.tier} member',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: cs.onPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: cs.onPrimary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    'ACTIVE',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cs.onPrimary,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ),
+                Expanded(child: _UsageCircle(membership: membership)),
+                const SizedBox(width: 16),
+                Expanded(child: _SavingsCard(membership: membership)),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              membership.id,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: cs.onPrimary,
-                fontWeight: FontWeight.w600,
+
+            const SizedBox(height: 32),
+
+            // 3. Benefits List
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Plan Perks',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                  fontSize: 12,
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _HeaderItem(
-                    label: 'Member since',
-                    value: memberSinceText,
+            _BenefitsList(membership: membership),
+
+            const SizedBox(height: 32),
+
+            // 4. Action Buttons
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: FilledButton(
+                onPressed: () {},
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary, // Brand Green
+                  foregroundColor: colorScheme.onPrimary, // Black Text
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _HeaderItem(
-                    label: 'Expires',
-                    value: expiryText,
-                  ),
+                child: const Text(
+                  "Renew Membership",
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-              ],
+              ),
+            ),
+            TextButton(
+              onPressed: () {},
+              child: Text(
+                "View Billing History",
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
             ),
           ],
         ),
@@ -130,34 +135,166 @@ class _MembershipHeader extends StatelessWidget {
   }
 }
 
-class _HeaderItem extends StatelessWidget {
-  const _HeaderItem({
-    required this.label,
-    required this.value,
-  });
+//
+// 1. PREMIUM CARD WIDGET
+//
+class _PremiumMembershipCard extends StatelessWidget {
+  final Membership membership;
 
-  final String label;
-  final String value;
+  const _PremiumMembershipCard({required this.membership});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // We enforce a Dark Card look even in Light mode for "Premium" feel
+    const cardBgColor = Color(0xFF1E1E1E);
+    const cardTextColor = Colors.white;
+
+    return Container(
+      height: 200,
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2C2C2C), Color(0xFF000000)],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Background Texture
+          Positioned(
+            right: -50,
+            top: -50,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+              ),
+            ),
+          ),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Top Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "MotorAmbos",
+                    style: TextStyle(
+                      color: cardTextColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      membership.tier.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // ID
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "MEMBERSHIP ID",
+                    style: TextStyle(
+                      color: cardTextColor.withOpacity(0.5),
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    membership.id,
+                    style: const TextStyle(
+                      color: cardTextColor,
+                      fontFamily: 'Courier',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Footer
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _CardFooterItem(
+                    label: "SINCE",
+                    value: "${membership.memberSince.year}",
+                  ),
+                  _CardFooterItem(
+                    label: "EXPIRES",
+                    value:
+                    "${membership.expiry.month}/${membership.expiry.year.toString().substring(2)}",
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardFooterItem extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CardFooterItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: cs.onPrimary.withOpacity(0.85),
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9),
         ),
-        const SizedBox(height: 2),
         Text(
           value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: cs.onPrimary,
-            fontWeight: FontWeight.w600,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -165,124 +302,129 @@ class _HeaderItem extends StatelessWidget {
   }
 }
 
-class _BenefitsSection extends StatelessWidget {
-  const _BenefitsSection({required this.membership});
-
+//
+// 2. DASHBOARD WIDGETS
+//
+class _UsageCircle extends StatelessWidget {
   final Membership membership;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Your benefits',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'These are the perks included with your ${membership.tier.toLowerCase()} plan.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _BenefitTile(
-          icon: Icons.local_shipping_outlined,
-          title: 'Free towing',
-          subtitle:
-          'Up to ${membership.freeTowRadiusKm}km per incident within your coverage area.',
-        ),
-        const SizedBox(height: 8),
-        _BenefitTile(
-          icon: Icons.call_outlined,
-          title: 'Included roadside calls',
-          subtitle:
-          '${membership.includedCallsPerYear} assistance calls per year at no extra callout fee.',
-        ),
-        const SizedBox(height: 8),
-        _BenefitTile(
-          icon: Icons.price_change_outlined,
-          title: 'Member-only rates',
-          subtitle:
-          'Lower labour and service rates at partner garages & service providers.',
-        ),
-        const SizedBox(height: 8),
-        _BenefitTile(
-          icon: Icons.bolt_outlined,
-          title: 'Priority response',
-          subtitle: membership.prioritySupport
-              ? 'Get bumped up in the queue during peak times.'
-              : 'Standard response time.',
-        ),
-      ],
-    );
-  }
-}
-
-class _BenefitTile extends StatelessWidget {
-  const _BenefitTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
+  const _UsageCircle({required this.membership});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final remaining =
+        membership.includedCallsPerYear - membership.callsUsedThisYear;
+    final percent = remaining / membership.includedCallsPerYear;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: cs.outlineVariant.withOpacity(0.6),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.08),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: cs.primary,
-            ),
+        color: colorScheme.surfaceContainer, // Theme-aware background
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 70,
+            width: 70,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Text(
-                  title,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                CircularProgressIndicator(
+                  value: percent,
+                  strokeWidth: 8,
+                  backgroundColor: colorScheme.outlineVariant.withOpacity(0.3),
+                  color: colorScheme.primary,
+                  strokeCap: StrokeCap.round,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
+                Center(
+                  child: Text(
+                    "$remaining",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Calls Left",
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          ),
+          Text(
+            "of ${membership.includedCallsPerYear} included",
+            style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavingsCard extends StatelessWidget {
+  final Membership membership;
+
+  const _SavingsCard({required this.membership});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      height: 154,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer, // Theme-aware background
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.savings_rounded,
+              color: colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            "Total Saved",
+            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "GHS ${membership.estimatedSavings.toInt()}",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: colorScheme.onSurface,
             ),
           ),
         ],
@@ -291,180 +433,113 @@ class _BenefitTile extends StatelessWidget {
   }
 }
 
-class _UsageSection extends StatelessWidget {
-  const _UsageSection({required this.membership});
-
+//
+// 3. BENEFITS LIST
+//
+class _BenefitsList extends StatelessWidget {
   final Membership membership;
+
+  const _BenefitsList({required this.membership});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final remainingCalls =
-    (membership.includedCallsPerYear - membership.callsUsedThisYear)
-        .clamp(0, membership.includedCallsPerYear);
-
-    final usagePercent = membership.includedCallsPerYear == 0
-        ? 0.0
-        : membership.callsUsedThisYear /
-        membership.includedCallsPerYear;
-
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Usage & savings',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+        _BenefitRow(
+          icon: Icons.local_shipping_rounded,
+          color: Colors.blue,
+          title: "Free Towing",
+          subtitle: "${membership.freeTowRadiusKm}km radius coverage",
         ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: cs.outlineVariant.withOpacity(0.6),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Roadside calls this year',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: LinearProgressIndicator(
-                      value: usagePercent.clamp(0, 1),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${membership.callsUsedThisYear}/${membership.includedCallsPerYear}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                remainingCalls > 0
-                    ? '$remainingCalls included calls remaining this year.'
-                    : 'You’ve used all your included calls for this year.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Icon(
-                    Icons.savings_outlined,
-                    color: cs.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Estimated savings so far',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'GHS ${membership.estimatedSavings.toStringAsFixed(0)}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
+        const SizedBox(height: 16),
+        _BenefitRow(
+          icon: Icons.bolt_rounded,
+          color: Colors.orange,
+          title: "Priority Response",
+          subtitle: membership.prioritySupport
+              ? "Active VIP queueing"
+              : "Standard",
+        ),
+        const SizedBox(height: 16),
+        const _BenefitRow(
+          icon: Icons.build_circle_rounded,
+          color: Colors.purple,
+          title: "Labor Discount",
+          subtitle: "15% off at partner garages",
         ),
       ],
     );
   }
 }
 
-class _PlanActionsSection extends StatelessWidget {
-  const _PlanActionsSection({required this.membership});
+class _BenefitRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
 
-  final Membership membership;
+  const _BenefitRow({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Manage your plan',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Renew, upgrade, or see your billing history.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton(
-                onPressed: () {
-                  // TODO: renew flow
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Renewal flow coming soon.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme
-                              .colorScheme.onInverseSurface,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                child: const Text('Renew membership'),
-              ),
+    // Adjust accent colors for visibility in dark mode
+    final displayColor = isDark ? color.withOpacity(0.9) : color;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer, // Theme-aware background
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: displayColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {
-                  // TODO: upgrade flow
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Upgrade options coming soon.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme
-                              .colorScheme.onInverseSurface,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                child: const Text('View upgrade options'),
-              ),
+            child: Icon(icon, color: displayColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 13
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+          Icon(
+            Icons.check_circle,
+            color: colorScheme.primary,
+            size: 18,
+          ),
+        ],
+      ),
     );
   }
 }

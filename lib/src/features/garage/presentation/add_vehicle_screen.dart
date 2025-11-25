@@ -1,193 +1,199 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../application/vehicle_providers.dart';
+import 'package:motor_ambos/src/core/models/vehicle.dart';
+import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
 
 class AddVehicleScreen extends ConsumerStatefulWidget {
-  const AddVehicleScreen({super.key});
+  final Vehicle? vehicle;
+
+  const AddVehicleScreen({super.key, this.vehicle});
 
   @override
-  ConsumerState<AddVehicleScreen> createState() =>
-      _AddVehicleScreenState();
+  ConsumerState<AddVehicleScreen> createState() => _AddVehicleScreenState();
 }
 
-class _AddVehicleScreenState
-    extends ConsumerState<AddVehicleScreen> {
+class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  final _nameController = TextEditingController();
-  final _plateController = TextEditingController();
-  final _makeController = TextEditingController();
-  final _modelController = TextEditingController();
-  final _yearController = TextEditingController();
-
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _makeCtrl;
+  late final TextEditingController _modelCtrl;
+  late final TextEditingController _yearCtrl;
+  late final TextEditingController _plateCtrl;
   bool _isPrimary = false;
+  bool _isSaving = false;
+
+  bool get isEdit => widget.vehicle != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final v = widget.vehicle;
+    _nameCtrl = TextEditingController(text: v?.name ?? '');
+    _makeCtrl = TextEditingController(text: v?.make ?? '');
+    _modelCtrl = TextEditingController(text: v?.model ?? '');
+    _yearCtrl = TextEditingController(text: v?.year ?? '');
+    _plateCtrl = TextEditingController(text: v?.plate ?? '');
+    _isPrimary = v?.isPrimary ?? false;
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _plateController.dispose();
-    _makeController.dispose();
-    _modelController.dispose();
-    _yearController.dispose();
+    _nameCtrl.dispose();
+    _makeCtrl.dispose();
+    _modelCtrl.dispose();
+    _yearCtrl.dispose();
+    _plateCtrl.dispose();
     super.dispose();
   }
 
-  void _submit(BuildContext context) {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final year = int.tryParse(_yearController.text.trim()) ?? 0;
+    setState(() => _isSaving = true);
+    final service = ref.read(vehicleServiceProvider);
 
-    ref.read(vehicleListProvider.notifier).addVehicle(
-      name: _nameController.text.trim(),
-      plate: _plateController.text.trim().toUpperCase(),
-      make: _makeController.text.trim(),
-      model: _modelController.text.trim(),
-      year: year,
-      isPrimary: _isPrimary,
-    );
+    try {
+      if (isEdit) {
+        await service.updateVehicle(
+          id: widget.vehicle!.id,
+          name: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+          make: _makeCtrl.text.trim().isEmpty ? null : _makeCtrl.text.trim(),
+          model: _modelCtrl.text.trim().isEmpty ? null : _modelCtrl.text.trim(),
+          year: _yearCtrl.text.trim().isEmpty ? null : _yearCtrl.text.trim(),
+          plate: _plateCtrl.text.trim().isEmpty ? null : _plateCtrl.text.trim(),
+          isPrimary: _isPrimary,
+        );
+      } else {
+        await service.createVehicle(
+          name: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+          make: _makeCtrl.text.trim().isEmpty ? null : _makeCtrl.text.trim(),
+          model: _modelCtrl.text.trim().isEmpty ? null : _modelCtrl.text.trim(),
+          year: _yearCtrl.text.trim().isEmpty ? null : _yearCtrl.text.trim(),
+          plate: _plateCtrl.text.trim().isEmpty ? null : _plateCtrl.text.trim(),
+          isPrimary: _isPrimary,
+        );
+      }
 
-    Navigator.of(context).pop(); // go back to Garage
+      ref.invalidate(vehiclesProvider);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save vehicle: $e')));
+
+        print('$e');
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add vehicle'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              Text(
-                'Tell us a bit about your car.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Vehicle name',
-                  hintText: 'e.g. Daily runner, Mum\'s car',
-                ),
-                textInputAction: TextInputAction.next,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Enter a name for this vehicle';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: _plateController,
-                decoration: const InputDecoration(
-                  labelText: 'Number plate',
-                  hintText: 'e.g. GR 1234-24',
-                ),
-                textCapitalization: TextCapitalization.characters,
-                textInputAction: TextInputAction.next,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Enter the number plate';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _makeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Make',
-                        hintText: 'e.g. Toyota',
-                      ),
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Required';
-                        }
-                        return null;
-                      },
-                    ),
+      appBar: AppBar(title: Text(isEdit ? 'Edit vehicle' : 'Add vehicle')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                Text(
+                  'Basic details',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _modelController,
-                      decoration: const InputDecoration(
-                        labelText: 'Model',
-                        hintText: 'e.g. Corolla',
-                      ),
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Required';
-                        }
-                        return null;
-                      },
-                    ),
+                ),
+                const SizedBox(height: 12),
+
+                TextFormField(
+                  controller: _nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nickname (optional)',
+                    hintText: 'Eg. Daily Driver, Wife’s Car',
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: _yearController,
-                decoration: const InputDecoration(
-                  labelText: 'Year',
-                  hintText: 'e.g. 2019',
                 ),
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Enter the year';
-                  }
-                  final year = int.tryParse(value);
-                  if (year == null || year < 1980 || year > 2100) {
-                    return 'Enter a valid year';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-              SwitchListTile(
-                title: const Text('Set as primary vehicle'),
-                subtitle: const Text(
-                  'We’ll default to this car when you request assistance.',
+                TextFormField(
+                  controller: _makeCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Make',
+                    hintText: 'Toyota, Hyundai, Kia…',
+                  ),
                 ),
-                value: _isPrimary,
-                onChanged: (value) {
-                  setState(() {
-                    _isPrimary = value;
-                  });
-                },
-              ),
+                const SizedBox(height: 12),
 
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => _submit(context),
-                  child: const Text('Save vehicle'),
+                TextFormField(
+                  controller: _modelCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Model',
+                    hintText: 'Corolla, Tucson, Picanto…',
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+
+                TextFormField(
+                  controller: _yearCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Year',
+                    hintText: '2015',
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                TextFormField(
+                  controller: _plateCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Number plate',
+                    hintText: 'GR 1234-21',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Plate is required';
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 24),
+
+                SwitchListTile(
+                  value: _isPrimary,
+                  onChanged: (value) {
+                    setState(() => _isPrimary = value);
+                  },
+                  title: const Text('Set as primary vehicle'),
+                  subtitle: const Text(
+                    'This will be the default car used for assistance requests.',
+                  ),
+                  activeColor: cs.primary,
+                ),
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _isSaving ? null : _save,
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(isEdit ? 'Save changes' : 'Add vehicle'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

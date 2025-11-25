@@ -45,5 +45,16 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- 🔥 ADD THESE FOR LOCATION PERMISSIONS -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is needed to find nearby roadside assistance providers.</string>
+
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your location helps MotorAmbos deliver faster emergency support.</string>
+
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Your location is needed to continuously match you with nearby providers.</string>
+
 </dict>
 </plist>

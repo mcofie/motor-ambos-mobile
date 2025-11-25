@@ -38,6 +38,11 @@ dependencies:
   # Core architecture
   flutter_riverpod: ^2.5.0
   go_router: ^14.0.0
+  equatable: ^2.0.5
+  geolocator: ^13.0.1  # or the latest version from pub.dev
+  url_launcher: ^6.0.0
+
+  heroicons: ^0.10.0
 
   # Backend
   supabase_flutter: ^2.5.0

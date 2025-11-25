@@ -1,80 +1,219 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:motor_ambos/src/app/app_colors.dart';
+import 'package:motor_ambos/src/core/services/supabase_service.dart';
+import 'dart:math' as math; // still here in case you use it later
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _firstName = 'Driver';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final client = SupabaseService.client;
+    final user = client.auth.currentUser;
+
+    if (user == null) {
+      setState(() {
+        _firstName = 'Driver';
+      });
+      return;
+    }
+
+    final email = user.email ?? '';
+    final metadataName = user.userMetadata?['full_name'] as String?;
+    String fallbackName =
+        metadataName ?? (email.isNotEmpty ? email.split('@').first : 'Driver');
+
+    try {
+      final dynamic res = await client
+          .schema('motorambos')
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      String displayName = fallbackName;
+
+      if (res != null) {
+        final row = Map<String, dynamic>.from(res as Map);
+        final fullName = row['full_name'] as String?;
+        if (fullName != null && fullName.trim().isNotEmpty) {
+          displayName = fullName;
+        }
+      }
+
+      final parts = displayName.trim().split(RegExp(r'\s+'));
+      final first = parts.isNotEmpty ? parts.first : displayName;
+
+      setState(() {
+        _firstName = first;
+      });
+    } catch (_) {
+      // On error just use the fallback
+      final parts = fallbackName.trim().split(RegExp(r'\s+'));
+      final first = parts.isNotEmpty ? parts.first : fallbackName;
+      setState(() {
+        _firstName = first;
+      });
+    }
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning,';
+    if (hour < 17) return 'Good Afternoon,';
+    return 'Good Evening,';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    // Later: dynamic data from Supabase / Riverpod
-    const userName = 'Max';
+    // Mock membership data (you can later wire this too)
     const membershipTier = 'Premium';
     const membershipId = 'MBR-2048-001';
     final expiryDate = DateTime.now().add(const Duration(days: 142));
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Greeting
-          Text(
-            'Hi, $userName 👋',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Your MotorAmbos membership is active.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Membership card
-          _MembershipCard(
-            tier: membershipTier,
-            membershipId: membershipId,
-            expiryDate: expiryDate,
-            callsUsedThisYear: 3,
-            estimatedSavings: 420.0,
-          ),
-          const SizedBox(height: 28),
-
-          // Quick actions header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 1. Header with real user name
+              _HeaderSection(userName: _firstName, greeting: _greeting()),
+
+              const SizedBox(height: 24),
+
+              // 2. Membership Card (still mock data for now)
+              _MembershipCard(
+                tier: membershipTier,
+                membershipId: membershipId,
+                expiryDate: expiryDate,
+                callsUsedThisYear: 3,
+                estimatedSavings: 420.0,
+              ),
+
+              const SizedBox(height: 32),
+
+              // 3. Emergency SOS
+              _EmergencyAssistanceButton(onTap: () => context.go('/assist')),
+
+              const SizedBox(height: 28),
+
+              // 4. Section Title
               Text(
-                'Quick actions',
+                'Manage Vehicle',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: colorScheme.onSurface,
                 ),
               ),
-              Text(
-                'For your most common tasks',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              const SizedBox(height: 16),
+
+              // 5. Grid
+              const _ServicesGrid(),
             ],
           ),
-          const SizedBox(height: 12),
-
-          const _QuickActionsGrid(),
-        ],
+        ),
       ),
     );
   }
 }
 
 //
-// MEMBERSHIP CARD
+// 1. HEADER
+//
+class _HeaderSection extends StatelessWidget {
+  final String userName;
+  final String greeting;
+
+  const _HeaderSection({
+    required this.userName,
+    this.greeting = 'Good Morning,',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greeting,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                userName,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withOpacity(0.5),
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor: colorScheme.surfaceContainer,
+                child: Icon(Icons.person, color: colorScheme.onSurfaceVariant),
+              ),
+            ),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colorScheme.surface, width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+//
+// 2. PREMIUM MEMBERSHIP CARD
 //
 class _MembershipCard extends StatelessWidget {
   const _MembershipCard({
@@ -94,181 +233,153 @@ class _MembershipCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    final colorScheme = theme.colorScheme;
     final expiryText =
-        '${expiryDate.day.toString().padLeft(2, '0')}/${expiryDate.month.toString().padLeft(2, '0')}/${expiryDate.year}';
+        '${expiryDate.month.toString().padLeft(2, '0')}/${expiryDate.year.toString().substring(2)}';
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.brandAccent, // BLACK background
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top row: brand + tier
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'MotorAmbos',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppColors.brandPrimary,      // PRIMARY GREEN
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                ),
-              ),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.brandPrimary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: AppColors.brandPrimary.withOpacity(0.7),
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  tier.toUpperCase(),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppColors.brandPrimary,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.1,
-                  ),
-                ),
+    final cardBgColor = const Color(0xFF1E1E1E);
+    final cardTextColor = Colors.white;
+
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [cardBgColor, Colors.black],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-
-          // Membership ID
-          Text(
-            'Membership ID',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: Colors.white70,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            membershipId,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Row of stats
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _CardStat(
-                  label: 'Calls used',
-                  value: '$callsUsedThisYear',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _CardStat(
-                  label: 'Saved this year',
-                  value: 'GHS ${estimatedSavings.toStringAsFixed(0)}',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Expiry + button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Expiry text
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Expires',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white70,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.shield_moon,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'MotorAmbos',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: cardTextColor,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    expiryText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: Text(
+                      tier.toUpperCase(),
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                 ],
               ),
 
-              // Button to full screen card
-              FilledButton.tonal(
-                style: FilledButton.styleFrom(
-                  backgroundColor:
-                  AppColors.brandPrimary.withOpacity(0.16),
-                  foregroundColor: AppColors.brandPrimary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                ),
-                onPressed: () {
-                  context.push('/membership/card');
-                },
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
+              const SizedBox(height: 32),
+
+              // Stats Row
+              IntrinsicHeight(
+                child: Row(
                   children: [
-                    Icon(Icons.qr_code_2, size: 18),
-                    SizedBox(width: 6),
-                    Text('Show full card'),
+                    _StatItem(label: 'Calls Used', value: '$callsUsedThisYear'),
+                    VerticalDivider(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 30,
+                    ),
+                    _StatItem(
+                      label: 'Savings',
+                      value: 'GHS ${estimatedSavings.toStringAsFixed(0)}',
+                    ),
                   ],
                 ),
               ),
+
+              const SizedBox(height: 24),
+
+              // Footer Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        membershipId,
+                        style: TextStyle(
+                          color: cardTextColor,
+                          fontFamily: 'Courier',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Exp $expiryText',
+                        style: TextStyle(
+                          color: cardTextColor.withOpacity(0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton.filledTonal(
+                    style: IconButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: Colors.black,
+                    ),
+                    onPressed: () => context.push('/membership/card'),
+                    icon: const Icon(Icons.qr_code_2_rounded),
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CardStat extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _CardStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: Colors.white70,
-          ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
+        Positioned(
+          right: -30,
+          top: -30,
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colorScheme.primary.withOpacity(0.05),
+            ),
           ),
         ),
       ],
@@ -276,162 +387,237 @@ class _CardStat extends StatelessWidget {
   }
 }
 
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+        ),
+      ],
+    );
+  }
+}
+
 //
-// QUICK ACTIONS
+// 3. EMERGENCY BUTTON
 //
-class _QuickActionsGrid extends StatelessWidget {
-  const _QuickActionsGrid();
+class _EmergencyAssistanceButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _EmergencyAssistanceButton({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    final items = [
-      _QuickActionItem(
-        icon: Icons.bolt_outlined,
-        label: 'Request assistance',
-        description: 'Get help right now',
-        onTap: () => context.go('/assist'),
-      ),
-      _QuickActionItem(
-        icon: Icons.calendar_month_outlined,
-        label: 'Book a service',
-        description: 'Plan ahead for your car',
-        onTap: () => context.go('/assist'),
-      ),
-      _QuickActionItem(
-        icon: Icons.directions_car_filled_outlined,
-        label: 'Add a vehicle',
-        description: 'Save a car to your garage',
-        onTap: () => context.go('/garage'),
-      ),
-      _QuickActionItem(
-        icon: Icons.card_membership_outlined,
-        label: 'View membership',
-        description: 'See your plan & perks',
-        onTap: () => context.go('/membership'),
-      ),
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.6),
+    return Material(
+      color: colorScheme.errorContainer.withOpacity(0.4),
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(6.0),
+          child: Row(
+            children: [
+              Container(
+                height: 70,
+                width: 70,
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.error.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.sos_rounded,
+                  color: colorScheme.onError,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Request Assistance',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Flat tire, battery, towing',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.surface,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 16,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+          ),
         ),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: GridView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: items.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,        // TWO COLUMNS
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 2.7,    // Wide pill style
-        ),
-        itemBuilder: (context, index) {
-          return _QuickActionTile(item: items[index], theme: theme);
-        },
       ),
     );
   }
 }
 
-class _QuickActionItem {
-  final IconData icon;
-  final String label;
-  final String description;
-  final VoidCallback onTap;
+//
+// 4. SERVICES GRID
+//
+class _ServicesGrid extends StatelessWidget {
+  const _ServicesGrid();
 
-  const _QuickActionItem({
-    required this.icon,
-    required this.label,
-    required this.description,
-    required this.onTap,
-  });
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _GridItem(
+        icon: Icons.calendar_month_rounded,
+        label: 'Book Service',
+        accentColor: Colors.blue,
+        onTap: () => context.go('/assist'),
+      ),
+      _GridItem(
+        icon: Icons.directions_car_filled_rounded,
+        label: 'My Garage',
+        accentColor: Colors.orange,
+        onTap: () => context.go('/garage'),
+      ),
+      _GridItem(
+        icon: Icons.card_membership_rounded,
+        label: 'Membership',
+        accentColor: Colors.purple,
+        onTap: () => context.go('/membership'),
+      ),
+      _GridItem(
+        icon: Icons.history_rounded,
+        label: 'History',
+        accentColor: Colors.teal,
+        onTap: () => context.go('/history'),
+      ),
+    ];
+
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      itemCount: items.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.4,
+      ),
+      itemBuilder: (context, index) => items[index],
+    );
+  }
 }
 
-class _QuickActionTile extends StatelessWidget {
-  final _QuickActionItem item;
-  final ThemeData theme;
+class _GridItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color accentColor;
+  final VoidCallback onTap;
 
-  const _QuickActionTile({
-    required this.item,
-    required this.theme,
+  const _GridItem({
+    required this.icon,
+    required this.label,
+    required this.accentColor,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: item.onTap,
-      child: Ink(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
-            width: 0.9,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Row(
-          children: [
-            // Icon bubble
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.brandPrimary.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Icon(
-                item.icon,
-                size: 20,
-                color: AppColors.brandPrimary,
-              ),
-            ),
-            const SizedBox(width: 10),
+    final activeColor = isDark
+        ? accentColor.withOpacity(0.8)
+        : Color.lerp(accentColor, Colors.black, 0.3) ?? accentColor;
 
-            // Texts
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+    return Material(
+      color: colorScheme.surfaceContainer,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: activeColor, size: 22),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    item.label,
-                    style: theme.textTheme.labelMedium?.copyWith(
+                    label,
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      letterSpacing: -0.3,
+                      color: colorScheme.onSurface,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.description,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(width: 4),
-
-            Icon(
-              Icons.chevron_right,
-              size: 18,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

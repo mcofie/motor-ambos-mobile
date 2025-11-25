@@ -1,39 +1,32 @@
 class Vehicle {
   final String id;
   final String name;
-  final String plate;
   final String make;
   final String model;
-  final int year;
+  final int year; // Changed to int to match SQL
+  final String plate;
   final bool isPrimary;
 
-  const Vehicle({
+  Vehicle({
     required this.id,
     required this.name,
-    required this.plate,
     required this.make,
     required this.model,
     required this.year,
+    required this.plate,
     this.isPrimary = false,
   });
 
-  Vehicle copyWith({
-    String? id,
-    String? name,
-    String? plate,
-    String? make,
-    String? model,
-    int? year,
-    bool? isPrimary,
-  }) {
+  // Factory to convert JSON from Supabase to Dart Object
+  factory Vehicle.fromJson(Map<String, dynamic> json) {
     return Vehicle(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      plate: plate ?? this.plate,
-      make: make ?? this.make,
-      model: model ?? this.model,
-      year: year ?? this.year,
-      isPrimary: isPrimary ?? this.isPrimary,
+      id: json['id'] as String,
+      name: json['name'] as String? ?? 'My Car',
+      make: json['make'] as String? ?? '',
+      model: json['model'] as String? ?? '',
+      year: json['year'] as int? ?? 2020,
+      plate: json['plate'] as String? ?? '',
+      isPrimary: json['is_primary'] as bool? ?? false,
     );
   }
 }
