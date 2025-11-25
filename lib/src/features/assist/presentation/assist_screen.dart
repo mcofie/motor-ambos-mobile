@@ -14,114 +14,112 @@ class AssistScreen extends ConsumerStatefulWidget {
 
 class _AssistScreenState extends ConsumerState<AssistScreen> {
   int _modeIndex = 0; // 0 = Emergency, 1 = Services
-  String _selectedIssue = 'Towing';
+  String _selectedIssue = 'Towing'; // Default selection
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    // Theme Colors
+    const kBgColor = Color(0xFFF8FAFC); // Slate-50
+    const kDarkNavy = Color(0xFF0F172A); // Slate-900
+
     final isEmergency = _modeIndex == 0;
 
     // 🔁 Vehicles from Riverpod
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final vehicles = vehiclesAsync.value ?? <Vehicle>[];
 
-    // 🏎 Pick primary vehicle (fallback to first if none)
+    // 🏎 Pick primary vehicle logic
     Vehicle? activeVehicle;
-    for (final v in vehicles) {
-      if (v.isPrimary) {
-        activeVehicle = v;
-        break;
-      }
+    if (vehicles.isNotEmpty) {
+      activeVehicle = vehicles.firstWhere(
+        (v) => v.isPrimary,
+        orElse: () => vehicles.first,
+      );
     }
-    activeVehicle ??= vehicles.isNotEmpty ? vehicles.first : null;
 
     final vehiclesLoading = vehiclesAsync.isLoading;
     final vehiclesError = vehiclesAsync.hasError ? vehiclesAsync.error : null;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: colorScheme.onSurface,
-          ),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
-        ),
-        centerTitle: true,
-        title: Text(
-          'Assistance',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          // 1. Top Section: Toggle & Context
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Column(
-              children: [
-                _ModernToggle(
-                  selectedIndex: _modeIndex,
-                  onChanged: (index) => setState(() => _modeIndex = index),
-                ),
-                const SizedBox(height: 20),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    isEmergency
-                        ? 'What issue are you facing?'
-                        : 'Schedule vehicle maintenance',
-                    key: ValueKey(isEmergency),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22,
+      backgroundColor: kBgColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. Custom Header (Matches Home Screen Vibe)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Assistance',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: kDarkNavy,
+                      letterSpacing: -0.5,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                  // Optional: Profile Icon or Notification Icon could go here
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: kDarkNavy,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // 2. Scrollable Content
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: isEmergency
-                  ? _EmergencyBody(
-                      selectedIssue: _selectedIssue,
-                      onIssueSelected: (val) =>
-                          setState(() => _selectedIssue = val),
-                      activeVehicle: activeVehicle,
-                      vehiclesLoading: vehiclesLoading,
-                      vehiclesError: vehiclesError,
-                    )
-                  : const _ServicesBody(),
+            // 2. Toggle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: _ModernToggle(
+                selectedIndex: _modeIndex,
+                onChanged: (index) => setState(() => _modeIndex = index),
+              ),
             ),
-          ),
 
-          // 3. Bottom Sticky Action Bar (Only for Emergency)
-          if (isEmergency)
-            _StickyBottomBar(
-              selectedIssue: _selectedIssue,
-              hasVehicle: activeVehicle != null,
+            // 3. Main Content
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: isEmergency
+                    ? _EmergencyBody(
+                        selectedIssue: _selectedIssue,
+                        onIssueSelected: (val) =>
+                            setState(() => _selectedIssue = val),
+                        activeVehicle: activeVehicle,
+                        vehiclesLoading: vehiclesLoading,
+                        vehiclesError: vehiclesError,
+                      )
+                    : const _ServicesBody(),
+              ),
             ),
-        ],
+
+            // 4. Sticky Bottom Bar (Only for Emergency)
+            if (isEmergency)
+              _StickyBottomBar(
+                selectedIssue: _selectedIssue,
+                hasVehicle: activeVehicle != null,
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
-//
-// CUSTOM TOGGLE
-//
+// -----------------------------------------------------------------------------
+// 1. CUSTOM TOGGLE
+// -----------------------------------------------------------------------------
 class _ModernToggle extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
@@ -130,26 +128,23 @@ class _ModernToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
-      height: 50,
+      height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer, // Theme-aware grey
-        borderRadius: BorderRadius.circular(25),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           _ToggleItem(
             label: 'Emergency',
-            icon: Icons.warning_amber_rounded,
             isSelected: selectedIndex == 0,
             onTap: () => onChanged(0),
           ),
           _ToggleItem(
             label: 'Services',
-            icon: Icons.calendar_month_rounded,
             isSelected: selectedIndex == 1,
             onTap: () => onChanged(1),
           ),
@@ -161,61 +156,37 @@ class _ModernToggle extends StatelessWidget {
 
 class _ToggleItem extends StatelessWidget {
   final String label;
-  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _ToggleItem({
     required this.label,
-    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: isSelected ? colorScheme.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: colorScheme.shadow.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
+            color: isSelected ? kDarkNavy : Colors.transparent,
+            borderRadius: BorderRadius.circular(99),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isSelected
-                    ? colorScheme.onSurface
-                    : colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isSelected
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: isSelected ? Colors.white : kSlateText,
+            ),
           ),
         ),
       ),
@@ -223,13 +194,12 @@ class _ToggleItem extends StatelessWidget {
   }
 }
 
-//
-// EMERGENCY BODY
-//
+// -----------------------------------------------------------------------------
+// 2. EMERGENCY BODY
+// -----------------------------------------------------------------------------
 class _EmergencyBody extends StatelessWidget {
   final String selectedIssue;
   final ValueChanged<String> onIssueSelected;
-
   final Vehicle? activeVehicle;
   final bool vehiclesLoading;
   final Object? vehiclesError;
@@ -244,57 +214,110 @@ class _EmergencyBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
+
     final issues = [
-      {'id': 'Towing', 'icon': Icons.local_shipping_outlined},
-      {'id': 'Flat tyre', 'icon': Icons.tire_repair},
-      {'id': 'Jumpstart', 'icon': Icons.bolt_outlined},
-      {'id': 'Engine', 'icon': Icons.build_circle_outlined},
-      {'id': 'Fuel', 'icon': Icons.local_gas_station_outlined},
-      {'id': 'Other', 'icon': Icons.support_agent},
+      {
+        'id': 'Battery',
+        'sub': 'Jumpstart / Replace',
+        'icon': Icons.battery_charging_full_rounded,
+      },
+      {
+        'id': 'Flat Tyre',
+        'sub': 'Change / Pump',
+        'icon': Icons.tire_repair_rounded,
+      },
+      {
+        'id': 'Engine Oil',
+        'sub': 'Top-up / Leak',
+        'icon': Icons.oil_barrel_rounded,
+      },
+      {'id': 'Towing', 'sub': 'Move Vehicle', 'icon': Icons.toys_rounded},
+      {
+        'id': 'Rescue',
+        'sub': 'Stuck / Accident',
+        'icon': Icons.warning_amber_rounded,
+      },
+      {
+        'id': 'Fuel',
+        'sub': 'Out of gas',
+        'icon': Icons.local_gas_station_rounded,
+      },
     ];
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
+          const Text(
+            'How can we help?',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: kDarkNavy,
+              letterSpacing: -0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Select the service you need right now.',
+            style: TextStyle(fontSize: 14, color: kSlateText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+
           GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
             itemCount: issues.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+              crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.9,
+              childAspectRatio: 1.1,
             ),
             itemBuilder: (context, index) {
               final item = issues[index];
-              final isSelected = selectedIssue == item['id'];
+              final id = item['id'] as String;
+              final isSelected = selectedIssue == id;
+
               return _IssueCard(
-                label: item['id'] as String,
+                label: id,
+                subLabel: item['sub'] as String,
                 icon: item['icon'] as IconData,
                 isSelected: isSelected,
-                onTap: () => onIssueSelected(item['id'] as String),
+                isAlert: id == 'Rescue',
+                onTap: () => onIssueSelected(id),
               );
             },
           ),
-          const SizedBox(height: 30),
-          const Text(
-            'For Vehicle',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+
+          const SizedBox(height: 32),
+
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'For Vehicle',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: kDarkNavy,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
 
-          // 🔧 Active vehicle card wired to real data
           _ActiveVehicleCard(
             vehicle: activeVehicle,
             isLoading: vehiclesLoading,
             error: vehiclesError,
           ),
 
-          const SizedBox(height: 100), // Space for bottom bar
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -303,62 +326,104 @@ class _EmergencyBody extends StatelessWidget {
 
 class _IssueCard extends StatelessWidget {
   final String label;
+  final String subLabel;
   final IconData icon;
   final bool isSelected;
+  final bool isAlert;
   final VoidCallback onTap;
 
   const _IssueCard({
     required this.label,
+    required this.subLabel,
     required this.icon,
     required this.isSelected,
+    this.isAlert = false,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
-    // Logic: Selected card uses "Secondary" (Brand Black), text is "OnSecondary"
-    final bgColor = isSelected
-        ? colorScheme.secondary
-        : colorScheme.surfaceContainer;
-    final iconColor = isSelected
-        ? colorScheme.primary
-        : colorScheme.onSurface.withOpacity(0.7);
-    final textColor = isSelected
-        ? colorScheme.onSecondary
-        : colorScheme.onSurface;
-    final borderColor = isSelected ? colorScheme.secondary : Colors.transparent;
+    final bgColor = isSelected ? kDarkNavy : Colors.white;
+    final mainTextColor = isSelected ? Colors.white : kDarkNavy;
+    final subTextColor = isSelected ? Colors.white70 : kSlateText;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor, width: 2),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 28, color: iconColor),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: textColor,
+    Color iconBg;
+    Color iconColor;
+
+    if (isSelected) {
+      iconBg = Colors.white.withOpacity(0.15);
+      iconColor = Colors.white;
+    } else if (isAlert) {
+      iconBg = const Color(0xFFFEF2F2);
+      iconColor = const Color(0xFFEF4444);
+    } else {
+      iconBg = const Color(0xFFF1F5F9);
+      iconColor = const Color(0xFF334155);
+    }
+
+    return Material(
+      color: bgColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: isSelected
+            ? BorderSide.none
+            : BorderSide(color: Colors.grey.withOpacity(0.15)),
+      ),
+      elevation: isSelected ? 8 : 0,
+      shadowColor: kDarkNavy.withOpacity(0.2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                height: 44,
+                width: 44,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: mainTextColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subLabel,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: subTextColor,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+// -----------------------------------------------------------------------------
+// 3. VEHICLE CARD
+// -----------------------------------------------------------------------------
 class _ActiveVehicleCard extends StatelessWidget {
   final Vehicle? vehicle;
   final bool isLoading;
@@ -372,125 +437,93 @@ class _ActiveVehicleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     if (isLoading) {
-      // Skeleton shimmer-ish state
       return Container(
-        padding: const EdgeInsets.all(16),
+        height: 80,
         decoration: BoxDecoration(
-          color: colorScheme.secondary,
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: colorScheme.onSecondary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _skeletonBar(colorScheme.onSecondary, width: 140),
-                  const SizedBox(height: 8),
-                  _skeletonBar(
-                    colorScheme.onSecondary.withOpacity(0.6),
-                    width: 100,
-                    height: 10,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        alignment: Alignment.center,
+        child: const CircularProgressIndicator.adaptive(),
       );
     }
 
     if (error != null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Could not load vehicles',
-            style: TextStyle(color: colorScheme.error, fontSize: 13),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => context.go('/garage'),
-            child: const Text('Open Garage'),
-          ),
-        ],
-      );
-    }
-
-    // ✅ Fix: copy to local var for promotion
-    final v = vehicle;
-    if (v == null) {
-      // No vehicle configured
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
-          ),
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.red.withOpacity(0.2)),
+        ),
+        child: const Text(
+          'Failed to load vehicle.',
+          style: TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
+    if (vehicle == null) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.withOpacity(0.2)),
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.directions_car_filled_outlined,
-              color: colorScheme.primary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'No vehicle selected.\nAdd a car to your garage to request assistance faster.',
-                style: TextStyle(color: colorScheme.onSurface, fontSize: 13),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
               ),
+              child: const Icon(Icons.add_rounded, color: Color(0xFF0F172A)),
             ),
+            const SizedBox(width: 16),
+            const Text(
+              "Add a vehicle to continue",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const Spacer(),
             TextButton(
               onPressed: () => context.go('/garage'),
-              child: Text('Add', style: TextStyle(color: colorScheme.primary)),
+              child: const Text("Add"),
             ),
           ],
         ),
       );
     }
 
-    // ✅ Vehicle is present -> show primary / active vehicle
-    final label = v.displayLabel;
-    final plate = v.plate?.trim();
-    final year = v.year?.trim();
-    final secondaryLine = [
-      if (plate != null && plate.isNotEmpty) plate,
-      if (year != null && year.isNotEmpty) '• $year',
-      if (v.isPrimary) '• Primary',
-    ].join('  ');
-
+    // Active Vehicle Display
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.secondary, // Brand Accent (Black)
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.onSecondary.withOpacity(0.1),
+              color: const Color(0xFFF1F5F9), // Light Slate
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.directions_car_filled,
-              color: colorScheme.onSecondary,
+            child: const Icon(
+              Icons.directions_car_filled_rounded,
+              color: Color(0xFF0F172A),
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -499,51 +532,40 @@ class _ActiveVehicleCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
-                  style: TextStyle(
-                    color: colorScheme.onSecondary,
-                    fontWeight: FontWeight.w700,
+                  vehicle!.displayLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: Color(0xFF0F172A),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                if (secondaryLine.isNotEmpty)
-                  Text(
-                    secondaryLine,
-                    style: TextStyle(
-                      color: colorScheme.onSecondary.withOpacity(0.7),
-                      fontSize: 13,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                Text(
+                  "${vehicle!.plate ?? 'No Plate'} • ${vehicle!.year ?? 'Year N/A'}",
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
                   ),
+                ),
               ],
             ),
           ),
           TextButton(
             onPressed: () => context.go('/garage'),
-            child: Text('Change', style: TextStyle(color: colorScheme.primary)),
+            child: const Text(
+              "Change",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
     );
   }
-
-  Widget _skeletonBar(Color color, {double width = 120, double height = 12}) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(999),
-      ),
-    );
-  }
 }
 
-//
-// STICKY BOTTOM BAR
-//
+// -----------------------------------------------------------------------------
+// 4. STICKY BOTTOM BAR
+// -----------------------------------------------------------------------------
 class _StickyBottomBar extends StatelessWidget {
   final String selectedIssue;
   final bool hasVehicle;
@@ -555,49 +577,39 @@ class _StickyBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 34),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
       ),
-      child: SafeArea(
-        top: false,
-        child: FilledButton(
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
           onPressed: hasVehicle
-              ? () {
-                  context.push(
-                    '/assist/request',
-                    extra: {'issue': selectedIssue},
-                  );
-                }
-              : null, // disable if no vehicle
-          style: FilledButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
+              ? () => context.push(
+                  '/assist/request',
+                  extra: {'issue': selectedIssue},
+                )
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF0F172A), // Dark Navy
+            foregroundColor: Colors.white,
             elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Icon(Icons.my_location_sharp, size: 20),
-              SizedBox(width: 10),
+            children: [
               Text(
-                'Confirm Location',
+                'Continue to Location',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
+              SizedBox(width: 8),
+              Icon(Icons.arrow_forward_rounded, size: 20),
             ],
           ),
         ),
@@ -606,44 +618,42 @@ class _StickyBottomBar extends StatelessWidget {
   }
 }
 
-//
-// SERVICES BODY
-//
-//
-// SERVICES BODY
-//
+// -----------------------------------------------------------------------------
+// 5. SERVICES BODY (RESTORED)
+// -----------------------------------------------------------------------------
 class _ServicesBody extends StatelessWidget {
   const _ServicesBody();
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
     final services = [
       {
         'title': 'Car Wash',
         'desc': 'Interior & Exterior',
-        'icon': Icons.local_car_wash,
+        'icon': Icons.local_car_wash_rounded,
       },
       {
         'title': 'Oil Change',
         'desc': 'Synthetic & Standard',
-        'icon': Icons.oil_barrel,
+        'icon': Icons.oil_barrel_rounded,
       },
       {
         'title': 'Diagnostics',
         'desc': 'Check engine light',
-        'icon': Icons.monitor_heart,
+        'icon': Icons.monitor_heart_rounded,
       },
       {
         'title': 'Detailing',
         'desc': 'Deep clean & polish',
-        'icon': Icons.cleaning_services,
+        'icon': Icons.cleaning_services_rounded,
       },
     ];
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       itemCount: services.length,
       separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
@@ -651,11 +661,16 @@ class _ServicesBody extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: colorScheme.surface,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withOpacity(0.5),
-            ),
+            border: Border.all(color: Colors.grey.withOpacity(0.15)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -663,13 +678,10 @@ class _ServicesBody extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainer,
+                  color: const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  s['icon'] as IconData,
-                  color: colorScheme.onSurface,
-                ),
+                child: Icon(s['icon'] as IconData, color: kDarkNavy, size: 20),
               ),
               const SizedBox(width: 16),
 
@@ -683,15 +695,13 @@ class _ServicesBody extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        color: kDarkNavy,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       s['desc'] as String,
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: kSlateText, fontSize: 13),
                     ),
                   ],
                 ),
@@ -706,15 +716,15 @@ class _ServicesBody extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.08),
+                  color: kDarkNavy.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(
+                child: const Text(
                   'Coming soon',
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    color: kDarkNavy,
                     letterSpacing: 0.3,
                   ),
                 ),

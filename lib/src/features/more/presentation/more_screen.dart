@@ -13,7 +13,12 @@ class _MoreScreenState extends State<MoreScreen> {
   bool _loading = true;
   String _userName = '';
   String _email = '';
-  String? _membershipTier; // e.g. 'PREMIUM' or null
+  String? _membershipTier;
+
+  // Theme Colors
+  static const kBgColor = Color(0xFFF8FAFC);
+  static const kDarkNavy = Color(0xFF0F172A);
+  static const kSlateText = Color(0xFF64748B);
 
   @override
   void initState() {
@@ -36,12 +41,10 @@ class _MoreScreenState extends State<MoreScreen> {
     }
 
     String email = user.email ?? '';
-    String nameFromAuth =
-        (user.userMetadata?['full_name'] as String?) ??
-            (email.isNotEmpty ? email.split('@').first : 'Driver');
+    String nameFromAuth = (user.userMetadata?['full_name'] as String?) ??
+        (email.isNotEmpty ? email.split('@').first : 'Driver');
 
     try {
-      // Load profile row if it exists
       final dynamic res = await client
           .schema('motorambos')
           .from('profiles')
@@ -56,12 +59,10 @@ class _MoreScreenState extends State<MoreScreen> {
         setState(() {
           _userName = fullName;
           _email = email;
-          // TODO: wire real membership tier from memberships table
-          _membershipTier = 'MEMBER';
+          _membershipTier = 'MEMBER'; // TODO: Fetch real tier
           _loading = false;
         });
       } else {
-        // No profile row – fall back to auth
         setState(() {
           _userName = nameFromAuth;
           _email = email;
@@ -70,7 +71,6 @@ class _MoreScreenState extends State<MoreScreen> {
         });
       }
     } catch (e) {
-      // On error, still show something
       setState(() {
         _userName = nameFromAuth;
         _email = email;
@@ -81,8 +81,6 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   Future<void> _handleSignOut(BuildContext context) async {
-    final colorScheme = Theme.of(context).colorScheme;
-
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -95,15 +93,12 @@ class _MoreScreenState extends State<MoreScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: colorScheme.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Sign out'),
           ),
         ],
       ),
-    ) ??
-        false;
+    ) ?? false;
 
     if (!shouldLogout) return;
 
@@ -114,50 +109,51 @@ class _MoreScreenState extends State<MoreScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to sign out: $e')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to sign out: $e')));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     final displayName = _userName.isNotEmpty ? _userName : 'Driver';
-    final displayEmail =
-    _email.isNotEmpty ? _email : 'Add your email in Profile';
+    final displayEmail = _email.isNotEmpty ? _email : 'Add your email in Profile';
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: kBgColor,
+      appBar: AppBar(
+        backgroundColor: kBgColor,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'More',
+          style: TextStyle(
+            color: kDarkNavy,
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
+        ),
+      ),
       body: CustomScrollView(
         slivers: [
-          // 1. Theme-Aware Sliver App Bar
-          SliverAppBar(
-            expandedHeight: 220.0,
-            floating: false,
-            pinned: true,
-            backgroundColor: colorScheme.surface,
-            flexibleSpace: FlexibleSpaceBar(
-              background: _ProfileHeader(
+          SliverList(
+            delegate: SliverChildListDelegate([
+              const SizedBox(height: 20),
+
+              // 1. Profile Header
+              _ProfileHeader(
                 userName: displayName,
                 email: displayEmail,
                 tier: _membershipTier,
                 onEdit: () => context.go('/account'),
                 loading: _loading,
               ),
-            ),
-          ),
 
-          // 2. Settings Groups
-          SliverList(
-            delegate: SliverChildListDelegate([
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
+              // 2. Settings Groups
               _SettingsGroup(
-                title: 'Account',
+                title: 'Account & Vehicle',
                 children: [
                   _SettingsTile(
                     icon: Icons.card_membership_rounded,
@@ -167,7 +163,7 @@ class _MoreScreenState extends State<MoreScreen> {
                     onTap: () => context.go('/membership'),
                   ),
                   _SettingsTile(
-                    icon: Icons.directions_car_rounded,
+                    icon: Icons.directions_car_filled_rounded,
                     iconColor: Colors.orange,
                     title: 'My Garage',
                     onTap: () => context.go('/garage'),
@@ -176,43 +172,24 @@ class _MoreScreenState extends State<MoreScreen> {
               ),
 
               _SettingsGroup(
-                title: 'Support',
+                title: 'Support & Legal',
                 children: [
                   _SettingsTile(
                     icon: Icons.headset_mic_rounded,
-                    iconColor: colorScheme.primary,
+                    iconColor: Colors.blue,
                     title: 'Contact Support',
-                    onTap: () {},
-                  ),
-                  _SettingsTile(
-                    icon: Icons.chat_bubble_rounded,
-                    iconColor: Colors.teal,
-                    title: 'Give Feedback',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-
-              _SettingsGroup(
-                title: 'More',
-                children: [
-                  _SettingsTile(
-                    icon: Icons.card_giftcard_rounded,
-                    iconColor: Colors.pink,
-                    title: 'Refer a Friend',
-                    subtitle: 'Get GHS 50 credit',
-                    onTap: () {},
+                    onTap: () {}, // TODO: Implement support
                   ),
                   _SettingsTile(
                     icon: Icons.policy_rounded,
-                    iconColor: colorScheme.outline,
+                    iconColor: kSlateText,
                     title: 'Legal & Privacy',
                     onTap: () {},
                   ),
                 ],
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // 3. Logout Button
               Padding(
@@ -220,33 +197,40 @@ class _MoreScreenState extends State<MoreScreen> {
                 child: TextButton(
                   onPressed: () => _handleSignOut(context),
                   style: TextButton.styleFrom(
-                    foregroundColor: colorScheme.error,
+                    foregroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor:
-                    colorScheme.errorContainer.withOpacity(0.2),
+                    backgroundColor: const Color(0xFFFEF2F2), // Light Red
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'Sign Out',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.logout_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Sign Out',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              Center(
+              const Center(
                 child: Text(
                   'Version 1.0.2 (Build 40)',
                   style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
+                    color: kSlateText,
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 100), // Spacing for bottom nav
             ]),
           ),
         ],
@@ -275,115 +259,99 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final bgColor = isDark ? colorScheme.surface : const Color(0xFF1A1A1A);
-    final textColor = isDark ? colorScheme.onSurface : Colors.white;
-    final subTextColor = isDark ? colorScheme.onSurfaceVariant : Colors.white70;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
-      color: bgColor,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
         children: [
-          Row(
-            children: [
-              // Avatar
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colorScheme.primary, width: 2),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://i.pravatar.cc/150?img=11'),
-                    fit: BoxFit.cover,
+          // Avatar
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFF1F5F9),
+              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+            ),
+            alignment: Alignment.center,
+            child: loading
+                ? const CircularProgressIndicator(strokeWidth: 2)
+                : Text(
+              userName.isNotEmpty ? userName[0].toUpperCase() : 'D',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: kDarkNavy,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userName,
+                  style: const TextStyle(
+                    color: kDarkNavy,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Info
-              Expanded(
-                child: loading
-                    ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 16,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  style: const TextStyle(
+                    color: kSlateText,
+                    fontSize: 13,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (tier != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: kDarkNavy.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 14,
-                      width: 180,
-                      decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                )
-                    : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      userName,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 20,
+                    child: Text(
+                      tier!.toUpperCase(),
+                      style: const TextStyle(
+                        color: kDarkNavy,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      email,
-                      style: TextStyle(
-                        color: subTextColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (tier != null && tier!.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color:
-                            colorScheme.primary.withOpacity(0.5),
-                          ),
-                        ),
-                        child: Text(
-                          tier!.toUpperCase(),
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              // Edit Button
-              IconButton(
-                onPressed: onEdit,
-                icon: Icon(Icons.settings_outlined, color: textColor),
-              ),
-            ],
+                  ),
+                ]
+              ],
+            ),
+          ),
+          // Edit Button
+          IconButton(
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit_rounded, color: kSlateText, size: 20),
           ),
         ],
       ),
@@ -402,32 +370,35 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    const kSlateText = Color(0xFF64748B);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurfaceVariant,
-              letterSpacing: 1.0,
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              title.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: kSlateText,
+                letterSpacing: 1.0,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.withOpacity(0.15)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.02),
                   blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -438,8 +409,9 @@ class _SettingsGroup extends StatelessWidget {
                   if (i != children.length - 1)
                     Divider(
                       height: 1,
-                      indent: 56,
-                      color: colorScheme.outlineVariant.withOpacity(0.2),
+                      indent: 60,
+                      endIndent: 20,
+                      color: Colors.grey.withOpacity(0.1),
                     ),
                 ],
               ],
@@ -471,46 +443,58 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
-    final displayIconColor = isDark ? iconColor.withOpacity(0.9) : iconColor;
-
-    return ListTile(
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: displayIconColor.withOpacity(isDark ? 0.2 : 0.1),
-          borderRadius: BorderRadius.circular(8),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: kDarkNavy,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          subtitle!,
+                          style: const TextStyle(
+                            color: kSlateText,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: kSlateText),
+            ],
+          ),
         ),
-        child: Icon(icon, color: displayIconColor, size: 20),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-          color: colorScheme.onSurface,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-        subtitle!,
-        style: TextStyle(
-          color: colorScheme.onSurfaceVariant,
-          fontSize: 13,
-        ),
-      )
-          : null,
-      trailing: Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 14,
-        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
       ),
     );
   }

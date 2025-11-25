@@ -1,18 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
 
-/// Nearby providers results page
-///
-/// Pass in:
-/// - [issue] (e.g. "Towing")
-/// - [serviceCode] (e.g. "tow", "fuel", "battery", "rescue", "oil", "tire")
-/// - [locationLabel] (human-readable address/location string)
-/// - [providers] (List<Map<String, dynamic>> from RPC)
-/// - [driverName], [driverPhone] (for create_request)
-/// - [lat], [lng] (driver location used for create_request)
 class ProvidersResultsScreen extends StatelessWidget {
   const ProvidersResultsScreen({
     super.key,
@@ -30,62 +20,75 @@ class ProvidersResultsScreen extends StatelessWidget {
   final String serviceCode;
   final String locationLabel;
   final List<Map<String, dynamic>> providers;
-
   final String driverName;
   final String driverPhone;
   final double lat;
   final double lng;
 
+  // Theme Colors
+  static const kBgColor = Color(0xFFF8FAFC);
+  static const kDarkNavy = Color(0xFF0F172A);
+  static const kSlateText = Color(0xFF64748B);
+
   @override
   Widget build(BuildContext context) {
-    // You can tweak this to show radius + coords if you want
-    final String contextLocation = "Within 15km • $lat, $lng";
+    // Clean up coordinates for display
+    final String coords =
+        "${lat.toStringAsFixed(3)}, ${lng.toStringAsFixed(3)}";
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB), // Light greyish background
+      backgroundColor: kBgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: kBgColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black,
-            size: 20,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+            ],
           ),
-          onPressed: () => context.pop(),
+          child: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: kDarkNavy,
+            ),
+            onPressed: () => context.pop(),
+          ),
         ),
-        centerTitle: false,
-        titleSpacing: 0,
+        centerTitle: true,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Motor Ambos',
               style: TextStyle(
-                color: Colors.black,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                color: kDarkNavy,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
+            const Text(
               'NEARBY HELP',
               style: TextStyle(
-                color: Colors.grey[500],
+                color: kSlateText,
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.0,
               ),
             ),
           ],
         ),
         actions: [
-          // Black pill indicator from screenshot
+          // Progress Indicator Pill (Finished state)
           Container(
-            margin: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsets.only(right: 24),
             width: 40,
             height: 6,
             decoration: BoxDecoration(
-              color: Colors.black87,
+              color: kDarkNavy,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -93,42 +96,40 @@ class ProvidersResultsScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Header: "Nearby Help" + Context Info
+          // Context Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 const Text(
-                  'Nearby Help',
+                  'Providers Found',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Colors.black,
+                    color: kDarkNavy,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 Text(
-                  contextLocation,
-                  style: TextStyle(
+                  "Near $coords",
+                  style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[500],
+                    color: kSlateText,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Provider List
+          // List
           Expanded(
             child: providers.isEmpty
-                ? _EmptyState(issue: issue, onChangeIssue: () => context.pop())
+                ? _EmptyState(issue: issue, onBack: () => context.pop())
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
                     itemCount: providers.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 16),
                     itemBuilder: (context, index) {
@@ -144,41 +145,42 @@ class ProvidersResultsScreen extends StatelessWidget {
                     },
                   ),
           ),
-
-          // Bottom Refresh Button
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: OutlinedButton(
-              onPressed: () {
-                // TODO: re-run search here if you want
-              },
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.grey[200]!),
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black87,
-                elevation: 0,
-              ),
-              child: const Text(
-                'Refresh Results',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-              ),
-            ),
-          ),
         ],
+      ),
+      // Floating Refresh Button
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: () {
+            // Logic to refresh would go here (e.g. pop and re-push or Riverpod refresh)
+            context.pop();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: kDarkNavy,
+            elevation: 4,
+            shadowColor: Colors.black.withOpacity(0.2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+          ),
+          child: const Text(
+            'Refresh Results',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+        ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // PROVIDER CARD
-// ─────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _ProviderCard extends StatefulWidget {
   const _ProviderCard({
@@ -207,12 +209,14 @@ class _ProviderCardState extends State<_ProviderCard> {
   bool _isExpanded = false;
   bool _isSubmitting = false;
 
+  // Colors
+  static const kDarkNavy = Color(0xFF0F172A);
+  static const kSlateText = Color(0xFF64748B);
+
   Future<bool> _createRequest(BuildContext context) async {
     setState(() => _isSubmitting = true);
     try {
-      final client = SupabaseService.client;
-
-      await client
+      await SupabaseService.client
           .schema('motorambos')
           .rpc(
             'create_request',
@@ -227,117 +231,84 @@ class _ProviderCardState extends State<_ProviderCard> {
           );
 
       if (!mounted) return true;
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your request has been registered.')),
+        const SnackBar(content: Text('Request sent successfully!')),
       );
-
       return true;
     } catch (e) {
       if (!mounted) return false;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to register request. Please try again.\n$e'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Request failed: $e')));
       return false;
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  Future<void> _handleCallPressed(BuildContext context) async {
+  Future<void> _handleCallPressed() async {
     final provider = widget.provider;
-    final name = (provider['name'] ?? 'this provider').toString();
-    final phoneRaw = provider['phone']?.toString() ?? '';
-    final phone = phoneRaw.trim();
+    final name = (provider['name'] ?? 'Provider').toString();
+    final phone = (provider['phone']?.toString() ?? '').trim();
 
     if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This provider does not have a phone number on file.'),
-        ),
+        const SnackBar(content: Text('No phone number available.')),
       );
       return;
     }
 
-    final confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Call provider'),
-            content: Text(
-              'We’ll register your request and call $name on your behalf at $phone.\n\nDo you want to proceed?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Okay'),
-              ),
-            ],
+    // Confirm Dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Contact Provider'),
+        content: Text('We will register your request and dial $name ($phone).'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
           ),
-        ) ??
-        false;
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: kDarkNavy),
+            child: const Text('Call Now'),
+          ),
+        ],
+      ),
+    );
 
-    if (!confirmed) return;
+    if (confirm != true) return;
 
-    final ok = await _createRequest(context);
-    if (!ok || !mounted) return;
+    // 1. Register Request
+    final success = await _createRequest(context);
+    if (!success) return;
 
-    // Now place the actual phone call
+    // 2. Launch Phone
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not launch phone dialer for $phone')),
-      );
     }
-  }
-
-  Future<void> _handleSendInfoPressed(BuildContext context) async {
-    final ok = await _createRequest(context);
-    if (!ok || !mounted) return;
-
-    // Optionally you can change this message – request toast already shown in _createRequest
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('We’ve shared your details with the provider.'),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = widget.provider;
-
-    // Data parsing
-    final name = (provider['name'] ?? 'Unknown Provider').toString();
-    final rating = (provider['rating'] is num)
-        ? (provider['rating'] as num).toDouble()
+    final p = widget.provider;
+    final name = (p['name'] ?? 'Provider').toString();
+    final rating = (p['rating'] is num) ? (p['rating'] as num).toDouble() : 0.0;
+    final distance = (p['distance_km'] is num)
+        ? (p['distance_km'] as num).toDouble()
         : 0.0;
-    final distanceKm = (provider['distance_km'] is num)
-        ? (provider['distance_km'] as num).toDouble()
-        : 0.3; // Default for mock
-    final isVerified = provider['is_verified'] == true;
+    final isVerified = p['is_verified'] == true;
 
-    final minCallout = (provider['min_callout_fee'] as num?)?.toDouble();
-    final providerCallout = (provider['provider_callout_fee'] as num?)
-        ?.toDouble();
-    final displayFee = minCallout ?? providerCallout ?? 50.0; // Fallback
+    // Pricing
+    final minFee = (p['min_callout_fee'] as num?)?.toDouble();
+    final callFee = (p['provider_callout_fee'] as num?)?.toDouble();
+    final displayFee = minFee ?? callFee ?? 50.0;
+    final coverage = (p['coverage_radius_km'] as num?)?.toInt() ?? 10;
 
-    final coverage = (provider['coverage_radius_km'] as num?)?.toInt() ?? 10;
-
-    // Services Parsing
-    final rawRates = provider['rates'];
+    // Rates
+    final rawRates = p['rates'];
     List<Map<String, dynamic>> rates = [];
     if (rawRates is List) {
       rates = rawRates
@@ -347,12 +318,11 @@ class _ProviderCardState extends State<_ProviderCard> {
           .cast<Map<String, dynamic>>();
     }
 
-    final isBusy = _isSubmitting;
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -360,14 +330,13 @@ class _ProviderCardState extends State<_ProviderCard> {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey[100]!),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- TOP ROW: Avatar, Info, Map Icon ---
+            // Header Row
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -376,7 +345,7 @@ class _ProviderCardState extends State<_ProviderCard> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F2F5),
+                    color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
@@ -385,13 +354,12 @@ class _ProviderCardState extends State<_ProviderCard> {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF5A6B87),
+                      color: kSlateText,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-
-                // Name & Rating
+                const SizedBox(width: 16),
+                // Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,13 +372,13 @@ class _ProviderCardState extends State<_ProviderCard> {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                color: kDarkNavy,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (isVerified) ...[
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             const Icon(
                               Icons.verified,
                               size: 16,
@@ -419,25 +387,24 @@ class _ProviderCardState extends State<_ProviderCard> {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
-                          // Rating Badge
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE7F6EB), // Light green
+                              color: const Color(0xFFF0FDF4), // Light Green
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               children: [
                                 const Icon(
-                                  Icons.star_rate_rounded,
+                                  Icons.star_rounded,
                                   size: 14,
-                                  color: Color(0xFF2E7D32),
+                                  color: Colors.green,
                                 ),
                                 const SizedBox(width: 2),
                                 Text(
@@ -445,7 +412,7 @@ class _ProviderCardState extends State<_ProviderCard> {
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2E7D32),
+                                    color: Colors.green,
                                   ),
                                 ),
                               ],
@@ -453,11 +420,10 @@ class _ProviderCardState extends State<_ProviderCard> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            "•  ${distanceKm.toStringAsFixed(1)} km away",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                            '• ${distance.toStringAsFixed(1)} km',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: kSlateText,
                             ),
                           ),
                         ],
@@ -465,118 +431,90 @@ class _ProviderCardState extends State<_ProviderCard> {
                     ],
                   ),
                 ),
-
-                // Map Icon Button (placeholder)
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.location_on_outlined,
-                    color: Colors.grey[600],
-                    size: 20,
-                  ),
-                ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // --- BADGES ROW (Fee, Range) ---
+            // Badges
             Row(
               children: [
-                _InfoBadge(text: "FEE: GHC${displayFee.toStringAsFixed(0)}"),
+                _InfoBadge(text: 'FEE: GHC${displayFee.toStringAsFixed(0)}'),
                 const SizedBox(width: 8),
-                _InfoBadge(text: "RANGE: ${coverage}KM"),
+                _InfoBadge(text: 'RANGE: ${coverage}KM'),
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // --- SERVICES LIST (Accordion)
-            Theme(
-              data: Theme.of(
-                context,
-              ).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                initiallyExpanded: false,
-                onExpansionChanged: (expanded) {
-                  setState(() => _isExpanded = expanded);
-                },
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(bottom: 12),
-                title: Text(
-                  "${_isExpanded ? 'Hide' : 'View'} ${rates.length} services & pricing",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
+            // Services List (Accordion)
+            if (rates.isNotEmpty)
+              Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(bottom: 12),
+                  title: Text(
+                    '${_isExpanded ? "Hide" : "View"} ${rates.length} services & pricing',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: kSlateText,
+                    ),
                   ),
+                  iconColor: kSlateText,
+                  collapsedIconColor: kSlateText,
+                  onExpansionChanged: (val) =>
+                      setState(() => _isExpanded = val),
+                  children: rates.map((r) => _ServiceRow(rate: r)).toList(),
                 ),
-                iconColor: Colors.grey[600],
-                collapsedIconColor: Colors.grey[600],
-                children: rates.map((rate) {
-                  return _ServiceRow(rate: rate);
-                }).toList(),
               ),
-            ),
 
-            // --- ACTION BUTTONS ---
+            // Action Buttons
             Row(
               children: [
-                // Call Button
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: isBusy
-                        ? null
-                        : () => _handleCallPressed(context),
+                    onPressed: _isSubmitting ? null : _handleCallPressed,
+                    icon: const Icon(Icons.phone_outlined, size: 18),
+                    label: const Text('Call'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.grey[300]!),
+                      side: BorderSide(color: Colors.grey.withOpacity(0.3)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      foregroundColor: Colors.black,
-                    ),
-                    icon: isBusy
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.phone_outlined, size: 20),
-                    label: Text(
-                      isBusy ? 'Please wait' : 'Call',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      foregroundColor: kDarkNavy,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Send Info Button
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: isBusy
+                    onPressed: _isSubmitting
                         ? null
-                        : () => _handleSendInfoPressed(context),
+                        : () => _createRequest(context),
+                    icon: _isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.send_rounded, size: 18),
+                    label: Text(_isSubmitting ? 'Sending...' : 'Send Info'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: const Color(0xFF0F172A),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      backgroundColor: kDarkNavy,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                    ),
-                    icon: const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 20,
-                    ),
-                    label: Text(
-                      isBusy ? 'Sending…' : 'Send Info',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -589,10 +527,6 @@ class _ProviderCardState extends State<_ProviderCard> {
   }
 }
 
-// ─────────────────────────────────────────────
-// SMALL WIDGETS
-// ─────────────────────────────────────────────
-
 class _InfoBadge extends StatelessWidget {
   final String text;
 
@@ -603,15 +537,15 @@ class _InfoBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6F8),
+        color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: const TextStyle(
           fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF5A6B87),
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF475569),
           letterSpacing: 0.5,
         ),
       ),
@@ -628,33 +562,23 @@ class _ServiceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = (rate['name'] ?? 'Service').toString();
     final price = (rate['base_price'] as num?)?.toDouble();
-
     final priceText = price != null ? "GHC${price.toStringAsFixed(0)}" : "N/A";
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(10),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             name,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF334155),
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 13, color: Color(0xFF334155)),
           ),
           Text(
             priceText,
             style: const TextStyle(
               fontSize: 13,
-              color: Colors.black87,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
             ),
           ),
         ],
@@ -665,9 +589,9 @@ class _ServiceRow extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final String issue;
-  final VoidCallback onChangeIssue;
+  final VoidCallback onBack;
 
-  const _EmptyState({required this.issue, required this.onChangeIssue});
+  const _EmptyState({required this.issue, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -675,13 +599,23 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.search_off_rounded, size: 60, color: Colors.grey),
+          Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          const Text(
-            "No Providers Found",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            "No providers found for '$issue'",
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
           ),
-          TextButton(onPressed: onChangeIssue, child: const Text("Go Back")),
+          const SizedBox(height: 8),
+          const Text(
+            "Try increasing your search radius.",
+            style: TextStyle(color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 24),
+          TextButton(onPressed: onBack, child: const Text("Go Back")),
         ],
       ),
     );

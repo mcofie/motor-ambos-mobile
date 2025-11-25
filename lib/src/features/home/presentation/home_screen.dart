@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:motor_ambos/src/core/services/membership_service.dart';
@@ -14,7 +13,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _firstName = 'Driver';
-
   Map<String, dynamic>? _membership;
   bool _loadingMembership = true;
 
@@ -25,14 +23,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadMembership();
   }
 
+  // --- LOGIC SECTION ---
+
   Future<void> _loadUserName() async {
     final client = SupabaseService.client;
     final user = client.auth.currentUser;
-
     if (user == null) {
-      setState(() {
-        _firstName = 'Driver';
-      });
+      if (mounted) setState(() => _firstName = 'Driver');
       return;
     }
 
@@ -50,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .maybeSingle();
 
       String displayName = fallbackName;
-
       if (res != null) {
         final row = Map<String, dynamic>.from(res as Map);
         final fullName = row['full_name'] as String?;
@@ -59,20 +55,18 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
+      // Extract First Name
       final parts = displayName.trim().split(RegExp(r'\s+'));
-      final first = parts.isNotEmpty ? parts.first : displayName;
-
-      if (!mounted) return;
-      setState(() {
-        _firstName = first;
-      });
+      if (mounted)
+        setState(
+          () => _firstName = parts.isNotEmpty ? parts.first : displayName,
+        );
     } catch (_) {
       final parts = fallbackName.trim().split(RegExp(r'\s+'));
-      final first = parts.isNotEmpty ? parts.first : fallbackName;
-      if (!mounted) return;
-      setState(() {
-        _firstName = first;
-      });
+      if (mounted)
+        setState(
+          () => _firstName = parts.isNotEmpty ? parts.first : fallbackName,
+        );
     }
   }
 
@@ -80,38 +74,32 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final service = MembershipService();
       final res = await service.getMembership();
-      if (!mounted) return;
-      setState(() {
-        _membership = res; // null means no membership yet
-        _loadingMembership = false;
-      });
+      if (mounted) {
+        setState(() {
+          _membership = res;
+          _loadingMembership = false;
+        });
+      }
     } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _membership = null;
-        _loadingMembership = false;
-      });
+      if (mounted) {
+        setState(() {
+          _membership = null;
+          _loadingMembership = false;
+        });
+      }
     }
   }
 
-  String _greeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning,';
-    if (hour < 17) return 'Good Afternoon,';
-    return 'Good Evening,';
-  }
+  // --- UI BUILD SECTION ---
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
+    // 1. Data Parsing
     final hasMembership =
         !_loadingMembership &&
         _membership != null &&
         (_membership!['is_active'] != false);
 
-    // Safely derive membership info
     String cardTier = 'PREMIUM';
     String membershipId = '— — — —';
     DateTime expiryDate = DateTime.now().add(const Duration(days: 365));
@@ -122,14 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
       final m = _membership!;
       cardTier = (m['tier'] as String?)?.toUpperCase() ?? 'PREMIUM';
       membershipId = (m['membership_id'] as String?) ?? '— — — —';
-
       final rawExpiry = m['expiry_date'];
       if (rawExpiry is String) {
         expiryDate = DateTime.tryParse(rawExpiry) ?? expiryDate;
       } else if (rawExpiry is DateTime) {
         expiryDate = rawExpiry;
       }
-
       callsUsed = (m['calls_used'] as int?) ?? 0;
       if (m['savings'] is num) {
         savings = (m['savings'] as num).toDouble();
@@ -138,21 +124,28 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
+    // 2. Theme Colors
+    const kBgColor = Color(0xFFF8FAFC); // Very light grey/blue
+    const kDarkNavy = Color(0xFF0F172A); // The dark text/button color
+
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: kBgColor,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Header with real user name
-              _HeaderSection(userName: _firstName, greeting: _greeting()),
+              // HEADER (Enhanced)
+              _HeaderSection(
+                userName: _firstName,
+                onProfileTap: () => context.go('/more'), // Navigate to profile
+              ),
 
               const SizedBox(height: 24),
 
-              // 2. Membership Card + Glass CTA overlay
+              // MEMBERSHIP CARD
               Stack(
                 children: [
                   _MembershipCard(
@@ -163,68 +156,84 @@ class _HomeScreenState extends State<HomeScreen> {
                     estimatedSavings: savings,
                   ),
 
-                  // Loading overlay (fade)
+                  // Loading Overlay
                   if (_loadingMembership)
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(24),
                         child: Container(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.white.withOpacity(0.5),
                           alignment: Alignment.center,
-                          child: const CircularProgressIndicator(),
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: kDarkNavy,
+                          ),
                         ),
                       ),
                     )
                   else if (!hasMembership)
-                    // Glassmorphic "Become a Member" overlay
+                    // Glassmorphic "Join" Overlay
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(28),
+                        borderRadius: BorderRadius.circular(24),
                         child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
+                          filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
                           child: Container(
-                            color: Colors.black.withOpacity(0.35),
+                            color: kDarkNavy.withOpacity(0.85),
                             alignment: Alignment.center,
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(24),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.star_rounded,
+                                    color: Colors.amber,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
                                 const Text(
-                                  'Become a MotorAmbos Member',
-                                  textAlign: TextAlign.center,
+                                  'Upgrade to Member',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 18,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 4),
                                 Text(
-                                  'Enjoy towing, rescue, fuel delivery and more — with one tap when you need help.',
-                                  textAlign: TextAlign.center,
+                                  'Get free towing & priority rescue',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withOpacity(0.7),
                                     fontSize: 13,
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                FilledButton(
-                                  onPressed: () => context.go('/membership'),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: colorScheme.primary,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
-                                      vertical: 12,
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () => context.go('/membership'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: kDarkNavy,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'View Membership Plans',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
+                                    child: const Text(
+                                      'View Plans',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -239,24 +248,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 32),
 
-              // 3. Emergency SOS
-              _EmergencyAssistanceButton(onTap: () => context.go('/assist')),
+              // BOLD ACTION POINT
+              const _EmergencyActionCard(),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
 
-              // 4. Section Title
-              Text(
-                'Manage Vehicle',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+              // MANAGE SECTION
+              const Text(
+                'Account & Vehicle',
+                style: TextStyle(
                   fontSize: 18,
-                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w800,
+                  color: kDarkNavy,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 5. Grid
-              const _ServicesGrid(),
+              // Utility Grid
+              const _UtilityGrid(),
             ],
           ),
         ),
@@ -265,85 +275,133 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-//
-// 1. HEADER
-//
+// -----------------------------------------------------------------------------
+// SUB-COMPONENTS
+// -----------------------------------------------------------------------------
+
 class _HeaderSection extends StatelessWidget {
   final String userName;
-  final String greeting;
+  final VoidCallback onProfileTap;
 
-  const _HeaderSection({
-    required this.userName,
-    this.greeting = 'Good Morning,',
-  });
+  const _HeaderSection({required this.userName, required this.onProfileTap});
+
+  // Determine greeting based on time of day
+  (String, IconData, Color) _getGreetingData() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return ('Good Morning', Icons.wb_sunny_rounded, Colors.orange);
+    } else if (hour < 17) {
+      return ('Good Afternoon', Icons.wb_cloudy_rounded, Colors.orange);
+    } else {
+      return ('Good Evening', Icons.nights_stay_rounded, Colors.indigoAccent);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final (greetingText, greetingIcon, iconColor) = _getGreetingData();
+    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
 
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                greeting,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              Row(
+                children: [
+                  Icon(greetingIcon, size: 16, color: iconColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    greetingText,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B), // Slate 500
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
                 userName,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
+                style: const TextStyle(
+                  color: Color(0xFF0F172A), // Slate 900
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
-        Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withOpacity(0.5),
+
+        // Profile Avatar Button
+        GestureDetector(
+          onTap: onProfileTap,
+          child: Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey[200]!, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              child: CircleAvatar(
-                radius: 22,
-                backgroundColor: colorScheme.surfaceContainer,
-                child: Icon(Icons.person, color: colorScheme.onSurfaceVariant),
-              ),
+              ],
             ),
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: colorScheme.error,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colorScheme.surface, width: 2),
+            alignment: Alignment.center,
+            child: Stack(
+              children: [
+                Center(
+                  child: Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
                 ),
-              ),
+                // Notification/Active Badge
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      // Red for alert, or Green for status
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
   }
 }
 
-//
-// 2. PREMIUM MEMBERSHIP CARD
-//
 class _MembershipCard extends StatelessWidget {
+  final String tier;
+  final String membershipId;
+  final DateTime expiryDate;
+  final int callsUsedThisYear;
+  final double estimatedSavings;
+
   const _MembershipCard({
     required this.tier,
     required this.membershipId,
@@ -352,187 +410,145 @@ class _MembershipCard extends StatelessWidget {
     required this.estimatedSavings,
   });
 
-  final String tier;
-  final String membershipId;
-  final DateTime expiryDate;
-  final int callsUsedThisYear;
-  final double estimatedSavings;
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final expiryText =
         '${expiryDate.month.toString().padLeft(2, '0')}/${expiryDate.year.toString().substring(2)}';
 
-    final cardBgColor = const Color(0xFF1E1E1E);
-    final cardTextColor = Colors.white;
-
-    return Stack(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [cardBgColor, Colors.black],
-            ),
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withOpacity(0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 260),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A), // Dark Navy Solid
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Header Row
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.shield_moon,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'MotorAmbos',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: cardTextColor,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                  const Icon(
+                    Icons.shield_outlined,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: Text(
-                      tier.toUpperCase(),
-                      style: TextStyle(
-                        color: colorScheme.primary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
-                      ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'MotorAmbos',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 32),
-
-              // Stats Row
-              IntrinsicHeight(
-                child: Row(
-                  children: [
-                    _StatItem(label: 'Calls Used', value: '$callsUsedThisYear'),
-                    VerticalDivider(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 30,
-                    ),
-                    _StatItem(
-                      label: 'Savings',
-                      value: 'GHS ${estimatedSavings.toStringAsFixed(0)}',
-                    ),
-                  ],
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  tier,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
+            ],
+          ),
 
-              const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-              // Footer Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        membershipId,
-                        style: TextStyle(
-                          color: cardTextColor,
-                          fontFamily: 'Courier',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Exp $expiryText',
-                        style: TextStyle(
-                          color: cardTextColor.withOpacity(0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton.filledTonal(
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: Colors.black,
-                    ),
-                    onPressed: () => context.push('/membership/card'),
-                    icon: const Icon(Icons.qr_code_2_rounded),
-                  ),
-                ],
+          Row(
+            children: [
+              _CardStat(value: '$callsUsedThisYear', label: 'Calls Used'),
+              Container(
+                height: 32,
+                width: 1,
+                color: Colors.white.withOpacity(0.1),
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+              _CardStat(
+                value: 'GHS ${estimatedSavings.toStringAsFixed(0)}',
+                label: 'Saved',
               ),
             ],
           ),
-        ),
-        Positioned(
-          right: -30,
-          top: -30,
-          child: Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: colorScheme.primary.withOpacity(0.05),
-            ),
+
+          const SizedBox(height: 24),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    membershipId,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Courier',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Exp $expiryText',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              const Icon(Icons.nfc, color: Colors.white30, size: 32),
+            ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String label;
+class _CardStat extends StatelessWidget {
   final String value;
+  final String label;
 
-  const _StatItem({required this.label, required this.value});
+  const _CardStat({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 2),
         Text(
           value,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
           ),
         ),
         Text(
@@ -544,85 +560,108 @@ class _StatItem extends StatelessWidget {
   }
 }
 
-//
-// 3. EMERGENCY BUTTON
-//
-class _EmergencyAssistanceButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _EmergencyAssistanceButton({required this.onTap});
+class _EmergencyActionCard extends StatelessWidget {
+  const _EmergencyActionCard();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Material(
-      color: colorScheme.errorContainer.withOpacity(0.4),
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        onTap: onTap,
+    return Container(
+      width: double.infinity,
+      height: 160,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFEF4444), Color(0xFFB91C1C)], // Red gradient
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(6.0),
-          child: Row(
-            children: [
-              Container(
-                height: 70,
-                width: 70,
-                decoration: BoxDecoration(
-                  color: colorScheme.error,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.error.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.sos_rounded,
-                  color: colorScheme.onError,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Request Assistance',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEF4444).withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go('/assist'),
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: const Text(
+                          '24/7 SUPPORT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Flat tire, battery, towing',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Request Help',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          height: 1.0,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        'Towing, Battery, Fuel & More',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.85),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorScheme.surface,
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 30,
+                  ),
                 ),
-                child: Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 16,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(width: 12),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -630,119 +669,79 @@ class _EmergencyAssistanceButton extends StatelessWidget {
   }
 }
 
-//
-// 4. SERVICES GRID
-//
-class _ServicesGrid extends StatelessWidget {
-  const _ServicesGrid();
+class _UtilityGrid extends StatelessWidget {
+  const _UtilityGrid();
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      _GridItem(
-        icon: Icons.calendar_month_rounded,
-        label: 'Book Service',
-        accentColor: Colors.blue,
-        onTap: () => context.go('/assist'),
-      ),
-      _GridItem(
-        icon: Icons.directions_car_filled_rounded,
-        label: 'My Garage',
-        accentColor: Colors.orange,
-        onTap: () => context.go('/garage'),
-      ),
-      _GridItem(
-        icon: Icons.card_membership_rounded,
-        label: 'Membership',
-        accentColor: Colors.purple,
-        onTap: () => context.go('/membership'),
-      ),
-      _GridItem(
-        icon: Icons.history_rounded,
-        label: 'History',
-        accentColor: Colors.teal,
-        onTap: () => context.go('/history'),
-      ),
-    ];
-
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: items.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.4,
-      ),
-      itemBuilder: (context, index) => items[index],
+    return Row(
+      children: [
+        Expanded(
+          child: _UtilityCard(
+            icon: Icons.directions_car_filled_rounded,
+            label: 'My Garage',
+            onTap: () => context.go('/garage'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _UtilityCard(
+            icon: Icons.history_rounded,
+            label: 'History',
+            onTap: () => context.go('/history'),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _GridItem extends StatelessWidget {
+class _UtilityCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color accentColor;
   final VoidCallback onTap;
 
-  const _GridItem({
+  const _UtilityCard({
     required this.icon,
     required this.label,
-    required this.accentColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final activeColor = isDark
-        ? accentColor.withOpacity(0.8)
-        : Color.lerp(accentColor, Colors.black, 0.3) ?? accentColor;
-
-    return Material(
-      color: colorScheme.surfaceContainer,
-      borderRadius: BorderRadius.circular(20),
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: Icon(icon, color: activeColor, size: 22),
+                child: Icon(icon, size: 18, color: const Color(0xFF334155)),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      letterSpacing: -0.3,
-                      color: colorScheme.onSurface,
-                    ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Color(0xFF0F172A),
                   ),
-                ],
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

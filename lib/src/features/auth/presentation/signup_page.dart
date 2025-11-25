@@ -1,9 +1,6 @@
-// lib/src/features/auth/presentation/signup_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:heroicons/heroicons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:motor_ambos/src/core/services/auth_service.dart';
 
 class SignupPage extends StatefulWidget {
@@ -22,6 +19,11 @@ class _SignupPageState extends State<SignupPage> {
   bool _loading = false;
   String? _errorText;
 
+  // Theme Colors
+  static const kBgColor = Color(0xFFF8FAFC);
+  static const kDarkNavy = Color(0xFF0F172A);
+  static const kSlateText = Color(0xFF64748B);
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -32,6 +34,14 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> _onSignUp() async {
+    if (_nameController.text.isEmpty ||
+        _phoneController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      setState(() => _errorText = 'Please fill in all fields.');
+      return;
+    }
+
     setState(() {
       _loading = true;
       _errorText = null;
@@ -46,7 +56,8 @@ class _SignupPageState extends State<SignupPage> {
       );
 
       if (!mounted) return;
-      // After signup you can send them to /app or /sign-in depending on flow
+      // Route to App or Sign In depending on verification flow
+      // Assuming direct login or auto-login after signup:
       context.go('/app');
     } on AuthException catch (e) {
       setState(() => _errorText = e.message);
@@ -59,195 +70,279 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final tt = theme.textTheme;
-
     return Scaffold(
+      backgroundColor: kBgColor,
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 32),
-                  Text(
-                    'Create your account',
-                    style: tt.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Join MotorAmbos and get help on the road anytime.',
-                    style: tt.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
+                  // 1. Header
+                  Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: kDarkNavy,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: kDarkNavy.withOpacity(0.2),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.person_add_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
+                  const Text(
+                    'Create Account',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: kDarkNavy,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Join MotorAmbos to get roadside\nassistance anywhere, anytime.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: kSlateText,
+                      height: 1.5,
+                    ),
+                  ),
 
+                  const SizedBox(height: 32),
+
+                  // 2. Error Box
                   if (_errorText != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: cs.errorContainer,
+                        color: const Color(0xFFFEF2F2), // Light Red
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.red.withOpacity(0.1)),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 18,
-                            color: cs.onErrorContainer,
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: Colors.red,
+                            size: 20,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               _errorText!,
-                              style: tt.bodySmall?.copyWith(
-                                color: cs.onErrorContainer,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                   ],
 
-                  TextField(
+                  // 3. Inputs
+                  _InputLabel(label: 'FULL NAME'),
+                  const SizedBox(height: 8),
+                  _StyledTextField(
                     controller: _nameController,
+                    hint: 'John Doe',
+                    icon: Icons.person_outline_rounded,
                     enabled: !_loading,
-                    decoration: InputDecoration(
-                      labelText: 'Full name',
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: HeroIcon(
-                          HeroIcons.user,
-                          style: HeroIconStyle.outline,
-                          color: cs.onSurfaceVariant,
-                          size: 20,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 12),
 
-                  TextField(
+                  const SizedBox(height: 20),
+
+                  _InputLabel(label: 'PHONE NUMBER'),
+                  const SizedBox(height: 8),
+                  _StyledTextField(
                     controller: _phoneController,
+                    hint: '+233 20 000 0000',
+                    icon: Icons.phone_iphone_rounded,
                     keyboardType: TextInputType.phone,
                     enabled: !_loading,
-                    decoration: InputDecoration(
-                      labelText: 'Phone',
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: HeroIcon(
-                          HeroIcons.phone,
-                          style: HeroIconStyle.outline,
-                          color: cs.onSurfaceVariant,
-                          size: 20,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 12),
 
-                  TextField(
+                  const SizedBox(height: 20),
+
+                  _InputLabel(label: 'EMAIL ADDRESS'),
+                  const SizedBox(height: 8),
+                  _StyledTextField(
                     controller: _emailController,
+                    hint: 'hello@example.com',
+                    icon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     enabled: !_loading,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: HeroIcon(
-                          HeroIcons.envelope,
-                          style: HeroIconStyle.outline,
-                          color: cs.onSurfaceVariant,
-                          size: 20,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 12),
 
-                  TextField(
+                  const SizedBox(height: 20),
+
+                  _InputLabel(label: 'PASSWORD'),
+                  const SizedBox(height: 8),
+                  _StyledTextField(
                     controller: _passwordController,
+                    hint: '••••••••',
+                    icon: Icons.lock_outline_rounded,
                     obscureText: true,
                     enabled: !_loading,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: HeroIcon(
-                          HeroIcons.lockClosed,
-                          style: HeroIconStyle.outline,
-                          color: cs.onSurfaceVariant,
-                          size: 20,
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 32),
 
+                  // 4. Primary Action
                   SizedBox(
-                    height: 48,
-                    child: FilledButton(
+                    height: 56,
+                    child: ElevatedButton(
                       onPressed: _loading ? null : _onSignUp,
-                      style: FilledButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kDarkNavy,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: _loading
                           ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                          : const Text('Create account'),
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Create Account',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
 
-                  const Spacer(),
+                  const SizedBox(height: 24),
 
+                  // 5. Sign In Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
+                      const Text(
                         'Already have an account?',
-                        style: tt.bodySmall,
+                        style: TextStyle(color: kSlateText),
                       ),
                       TextButton(
                         onPressed: _loading
                             ? null
-                            : () {
-                          context.go('/sign-in');
-                        },
-                        child: const Text('Sign in'),
+                            : () => context.go('/sign-in'),
+                        child: const Text(
+                          'Sign in',
+                          style: TextStyle(
+                            color: kDarkNavy,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// UI HELPERS
+// -----------------------------------------------------------------------------
+
+class _InputLabel extends StatelessWidget {
+  final String label;
+
+  const _InputLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF94A3B8), // Slate-400
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+}
+
+class _StyledTextField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final bool enabled;
+
+  const _StyledTextField({
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    this.obscureText = false,
+    this.keyboardType,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9), // Slate-100
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        enabled: enabled,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF0F172A), // Dark Navy
+        ),
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
+          hintText: hint,
+          hintStyle: TextStyle(
+            color: Colors.grey[400],
+            fontWeight: FontWeight.normal,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
           ),
         ),
       ),

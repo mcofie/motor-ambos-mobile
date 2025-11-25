@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 // MOCKING DOMAIN & PROVIDER
 class Membership {
@@ -43,89 +44,135 @@ final membershipProvider = Provider<Membership>((ref) {
 class MembershipScreen extends ConsumerWidget {
   const MembershipScreen({super.key});
 
+  // Theme Colors
+  static const kBgColor = Color(0xFFF8FAFC);
+  static const kDarkNavy = Color(0xFF0F172A);
+  static const kSlateText = Color(0xFF64748B);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final membership = ref.watch(membershipProvider);
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'My Membership',
-          style: TextStyle(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.bold
-          ),
-        ),
-        leading: BackButton(color: colorScheme.onSurface),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      backgroundColor: kBgColor,
+      body: SafeArea(
         child: Column(
           children: [
-            // 1. The Premium Card
-            _PremiumMembershipCard(membership: membership),
-
-            const SizedBox(height: 24),
-
-            // 2. Usage Dashboard (Visual Data)
-            Row(
-              children: [
-                Expanded(child: _UsageCircle(membership: membership)),
-                const SizedBox(width: 16),
-                Expanded(child: _SavingsCard(membership: membership)),
-              ],
-            ),
-
-            const SizedBox(height: 32),
-
-            // 3. Benefits List
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Plan Perks',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _BenefitsList(membership: membership),
-
-            const SizedBox(height: 32),
-
-            // 4. Action Buttons
-            SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: FilledButton(
-                onPressed: () {},
-                style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.primary, // Brand Green
-                  foregroundColor: colorScheme.onPrimary, // Black Text
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+            // 1. Custom Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: kDarkNavy),
+                      onPressed: () => context.canPop() ? context.pop() : context.go('/more'),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  "Renew Membership",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                  const Expanded(
+                    child: Text(
+                      'My Membership',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: kDarkNavy,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 40), // Balance
+                ],
               ),
             ),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                "View Billing History",
-                style: TextStyle(color: colorScheme.onSurfaceVariant),
+
+            // 2. Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    // The Premium Card
+                    _PremiumMembershipCard(membership: membership),
+
+                    const SizedBox(height: 24),
+
+                    // Usage Dashboard
+                    Row(
+                      children: [
+                        Expanded(child: _UsageCircle(membership: membership)),
+                        const SizedBox(width: 16),
+                        Expanded(child: _SavingsCard(membership: membership)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Benefits List
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'PLAN PERKS',
+                        style: TextStyle(
+                          color: kSlateText,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.0,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _BenefitsList(membership: membership),
+
+                    const SizedBox(height: 32),
+
+                    // Action Buttons
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // TODO: Implement renewal flow
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kDarkNavy,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          "Renew Membership",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text(
+                        "View Billing History",
+                        style: TextStyle(
+                          color: kSlateText,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ],
@@ -145,25 +192,18 @@ class _PremiumMembershipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // We enforce a Dark Card look even in Light mode for "Premium" feel
-    const cardBgColor = Color(0xFF1E1E1E);
-    const cardTextColor = Colors.white;
+    const kDarkNavy = Color(0xFF0F172A);
 
     return Container(
       height: 200,
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: cardBgColor,
+        color: kDarkNavy,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.2),
+            color: kDarkNavy.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -171,101 +211,88 @@ class _PremiumMembershipCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF2C2C2C), Color(0xFF000000)],
+          colors: [Color(0xFF1E293B), Color(0xFF0F172A)], // Slate gradient
         ),
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Background Texture
-          Positioned(
-            right: -50,
-            top: -50,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.05),
-              ),
-            ),
-          ),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Top Row
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Top Row
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  const Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
                   const Text(
                     "MotorAmbos",
                     style: TextStyle(
-                      color: cardTextColor,
+                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      membership.tier.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
                 ],
               ),
-
-              // ID
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "MEMBERSHIP ID",
-                    style: TextStyle(
-                      color: cardTextColor.withOpacity(0.5),
-                      fontSize: 10,
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  membership.tier.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    membership.id,
-                    style: const TextStyle(
-                      color: cardTextColor,
-                      fontFamily: 'Courier',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ],
+          ),
 
-              // Footer
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _CardFooterItem(
-                    label: "SINCE",
-                    value: "${membership.memberSince.year}",
-                  ),
-                  _CardFooterItem(
-                    label: "EXPIRES",
-                    value:
-                    "${membership.expiry.month}/${membership.expiry.year.toString().substring(2)}",
-                  ),
-                ],
+          // ID
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "MEMBERSHIP ID",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                membership.id,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Courier',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+
+          // Footer
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _CardFooterItem(
+                label: "SINCE",
+                value: "${membership.memberSince.year}",
+              ),
+              _CardFooterItem(
+                label: "EXPIRES",
+                value: "${membership.expiry.month.toString().padLeft(2, '0')}/${membership.expiry.year.toString().substring(2)}",
               ),
             ],
           ),
@@ -288,13 +315,15 @@ class _CardFooterItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9),
+          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9, fontWeight: FontWeight.w600),
         ),
+        const SizedBox(height: 2),
         Text(
           value,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: 13,
           ),
         ),
       ],
@@ -312,20 +341,21 @@ class _UsageCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
-    final remaining =
-        membership.includedCallsPerYear - membership.callsUsedThisYear;
+    final remaining = membership.includedCallsPerYear - membership.callsUsedThisYear;
     final percent = remaining / membership.includedCallsPerYear;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer, // Theme-aware background
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -341,18 +371,18 @@ class _UsageCircle extends StatelessWidget {
               children: [
                 CircularProgressIndicator(
                   value: percent,
-                  strokeWidth: 8,
-                  backgroundColor: colorScheme.outlineVariant.withOpacity(0.3),
-                  color: colorScheme.primary,
+                  strokeWidth: 6,
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  color: kDarkNavy,
                   strokeCap: StrokeCap.round,
                 ),
                 Center(
                   child: Text(
                     "$remaining",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: kDarkNavy,
                     ),
                   ),
                 ),
@@ -360,13 +390,13 @@ class _UsageCircle extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Text(
+          const Text(
             "Calls Left",
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kDarkNavy),
           ),
           Text(
             "of ${membership.includedCallsPerYear} included",
-            style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant),
+            style: const TextStyle(fontSize: 10, color: kSlateText),
           ),
         ],
       ),
@@ -381,17 +411,19 @@ class _SavingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
     return Container(
       padding: const EdgeInsets.all(16),
       height: 154,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer, // Theme-aware background
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -402,29 +434,25 @@ class _SavingsCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: const Color(0xFFF0FDF4), // Light Green
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              Icons.savings_rounded,
-              color: colorScheme.primary,
-              size: 20,
-            ),
+            child: const Icon(Icons.savings_rounded, color: Colors.green, size: 20),
           ),
           const Spacer(),
-          Text(
+          const Text(
             "Total Saved",
-            style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kSlateText),
           ),
           const SizedBox(height: 4),
           Text(
             "GHS ${membership.estimatedSavings.toInt()}",
-            style: TextStyle(
-              fontSize: 22,
+            style: const TextStyle(
+              fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: colorScheme.onSurface,
+              color: kDarkNavy,
             ),
           ),
         ],
@@ -456,9 +484,7 @@ class _BenefitsList extends StatelessWidget {
           icon: Icons.bolt_rounded,
           color: Colors.orange,
           title: "Priority Response",
-          subtitle: membership.prioritySupport
-              ? "Active VIP queueing"
-              : "Standard",
+          subtitle: membership.prioritySupport ? "Active VIP queueing" : "Standard",
         ),
         const SizedBox(height: 16),
         const _BenefitRow(
@@ -487,28 +513,32 @@ class _BenefitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Adjust accent colors for visibility in dark mode
-    final displayColor = isDark ? color.withOpacity(0.9) : color;
+    const kDarkNavy = Color(0xFF0F172A);
+    const kSlateText = Color(0xFF64748B);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer, // Theme-aware background
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: displayColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: displayColor, size: 24),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -517,27 +547,24 @@ class _BenefitRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: colorScheme.onSurface,
+                    color: kDarkNavy,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 13
+                  style: const TextStyle(
+                    color: kSlateText,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(
-            Icons.check_circle,
-            color: colorScheme.primary,
-            size: 18,
-          ),
+          const Icon(Icons.check_circle_rounded, color: Colors.green, size: 18),
         ],
       ),
     );

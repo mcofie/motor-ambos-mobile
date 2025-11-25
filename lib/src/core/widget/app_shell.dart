@@ -9,10 +9,20 @@ class AppShell extends StatelessWidget {
 
   static const _tabs = [
     _TabItem('/app', Icons.home_rounded, Icons.home_outlined, 'Home'),
-    _TabItem('/assist', Icons.car_crash_rounded, Icons.car_crash_outlined, 'Assist'),
+    _TabItem(
+      '/assist',
+      Icons.car_crash_rounded,
+      Icons.car_crash_outlined,
+      'Assist',
+    ),
     // _TabItem('/garage', Icons.directions_car_rounded, Icons.directions_car_outlined, 'Garage'),
     // _TabItem('/membership', Icons.card_membership_rounded, Icons.card_membership_outlined, 'Member'),
-    _TabItem('/more', Icons.grid_view_rounded, Icons.grid_view_outlined, 'More'),
+    _TabItem(
+      '/more',
+      Icons.grid_view_rounded,
+      Icons.grid_view_outlined,
+      'More',
+    ),
   ];
 
   int _indexForLocation(String location) {
@@ -26,7 +36,9 @@ class AppShell extends StatelessWidget {
     final currentIndex = _indexForLocation(location);
 
     return Scaffold(
-      extendBody: true,
+      // Setting extendBody to false (default) ensures the body stops
+      // right before the bottom navigation bar starts.
+      extendBody: false,
       body: child,
       bottomNavigationBar: _FloatingNavBar(
         currentIndex: currentIndex,
@@ -59,8 +71,16 @@ class _FloatingNavBar extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 30),
+    // Calculate safe area + margin
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final double bottomMargin = bottomPadding > 0 ? bottomPadding + 10 : 24;
+
+    return Container(
+      // This container background ensures the area behind the floating pill
+      // matches the scaffold background if it were transparent, but since
+      // extendBody is false, this sits in its own slot.
+      color: Colors.transparent,
+      padding: EdgeInsets.fromLTRB(24, 10, 24, bottomMargin),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: BackdropFilter(
@@ -107,7 +127,9 @@ class _FloatingNavBar extends StatelessWidget {
                           decoration: BoxDecoration(
                             // Active State: Use Primary Container or Inverse Surface
                             color: isSelected
-                                ? (isDark ? colorScheme.primary : colorScheme.onSurface)
+                                ? (isDark
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurface)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -115,7 +137,9 @@ class _FloatingNavBar extends StatelessWidget {
                             isSelected ? tab.activeIcon : tab.inactiveIcon,
                             // Icon Color Logic
                             color: isSelected
-                                ? (isDark ? colorScheme.onPrimary : colorScheme.surface)
+                                ? (isDark
+                                      ? colorScheme.onPrimary
+                                      : colorScheme.surface)
                                 : colorScheme.onSurfaceVariant.withOpacity(0.7),
                             size: 24,
                           ),
