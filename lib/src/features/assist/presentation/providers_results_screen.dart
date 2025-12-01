@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class ProvidersResultsScreen extends StatelessWidget {
   const ProvidersResultsScreen({
@@ -25,36 +26,36 @@ class ProvidersResultsScreen extends StatelessWidget {
   final double lat;
   final double lng;
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     // Clean up coordinates for display
     final String coords =
         "${lat.toStringAsFixed(3)}, ${lng.toStringAsFixed(3)}";
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: kBgColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
             ],
           ),
           child: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
               size: 18,
-              color: kDarkNavy,
+              color: theme.colorScheme.onSurface,
             ),
             onPressed: () => context.pop(),
           ),
@@ -62,18 +63,18 @@ class ProvidersResultsScreen extends StatelessWidget {
         centerTitle: true,
         title: Column(
           children: [
-            const Text(
+            Text(
               'Motor Ambos',
               style: TextStyle(
-                color: kDarkNavy,
+                color: theme.colorScheme.onSurface,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const Text(
+            Text(
               'NEARBY HELP',
               style: TextStyle(
-                color: kSlateText,
+                color: motTheme.slateText,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
@@ -88,7 +89,7 @@ class ProvidersResultsScreen extends StatelessWidget {
             width: 40,
             height: 6,
             decoration: BoxDecoration(
-              color: kDarkNavy,
+              color: theme.colorScheme.onSurface,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -103,21 +104,21 @@ class ProvidersResultsScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
+                Text(
                   'Providers Found',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: kDarkNavy,
+                    color: theme.colorScheme.onSurface,
                     letterSpacing: -0.5,
                   ),
                 ),
                 Text(
                   "Near $coords",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: kSlateText,
+                    color: motTheme.slateText,
                   ),
                 ),
               ],
@@ -129,21 +130,21 @@ class ProvidersResultsScreen extends StatelessWidget {
             child: providers.isEmpty
                 ? _EmptyState(issue: issue, onBack: () => context.pop())
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-                    itemCount: providers.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      return _ProviderCard(
-                        provider: providers[index],
-                        serviceCode: serviceCode,
-                        driverName: driverName,
-                        driverPhone: driverPhone,
-                        locationLabel: locationLabel,
-                        lat: lat,
-                        lng: lng,
-                      );
-                    },
-                  ),
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
+              itemCount: providers.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                return _ProviderCard(
+                  provider: providers[index],
+                  serviceCode: serviceCode,
+                  driverName: driverName,
+                  driverPhone: driverPhone,
+                  locationLabel: locationLabel,
+                  lat: lat,
+                  lng: lng,
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -159,14 +160,14 @@ class ProvidersResultsScreen extends StatelessWidget {
             context.pop();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: kDarkNavy,
+            backgroundColor: theme.cardColor,
+            foregroundColor: theme.colorScheme.onSurface,
             elevation: 4,
-            shadowColor: Colors.black.withOpacity(0.2),
+            shadowColor: Colors.black.withValues(alpha: 0.2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: motTheme.subtleBorder),
             ),
-            side: BorderSide(color: Colors.grey.withOpacity(0.2)),
           ),
           child: const Text(
             'Refresh Results',
@@ -209,11 +210,7 @@ class _ProviderCardState extends State<_ProviderCard> {
   bool _isExpanded = false;
   bool _isSubmitting = false;
 
-  // Colors
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
-
-  Future<bool> _createRequest(BuildContext context) async {
+  Future<bool> _createRequest() async {
     setState(() => _isSubmitting = true);
     try {
       await SupabaseService.client
@@ -247,6 +244,7 @@ class _ProviderCardState extends State<_ProviderCard> {
   }
 
   Future<void> _handleCallPressed() async {
+    final theme = Theme.of(context);
     final provider = widget.provider;
     final name = (provider['name'] ?? 'Provider').toString();
     final phone = (provider['phone']?.toString() ?? '').trim();
@@ -271,7 +269,7 @@ class _ProviderCardState extends State<_ProviderCard> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: kDarkNavy),
+            style: FilledButton.styleFrom(backgroundColor: theme.colorScheme.onSurface),
             child: const Text('Call Now'),
           ),
         ],
@@ -280,8 +278,10 @@ class _ProviderCardState extends State<_ProviderCard> {
 
     if (confirm != true) return;
 
+    if (!mounted) return;
+
     // 1. Register Request
-    final success = await _createRequest(context);
+    final success = await _createRequest();
     if (!success) return;
 
     // 2. Launch Phone
@@ -293,6 +293,9 @@ class _ProviderCardState extends State<_ProviderCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     final p = widget.provider;
     final name = (p['name'] ?? 'Provider').toString();
     final rating = (p['rating'] is num) ? (p['rating'] as num).toDouble() : 0.0;
@@ -320,12 +323,12 @@ class _ProviderCardState extends State<_ProviderCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: motTheme.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -345,16 +348,16 @@ class _ProviderCardState extends State<_ProviderCard> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: motTheme.inputBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     name.isNotEmpty ? name[0].toUpperCase() : 'P',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: kSlateText,
+                      color: motTheme.slateText,
                     ),
                   ),
                 ),
@@ -369,10 +372,10 @@ class _ProviderCardState extends State<_ProviderCard> {
                           Flexible(
                             child: Text(
                               name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: kDarkNavy,
+                                color: theme.colorScheme.onSurface,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -421,9 +424,9 @@ class _ProviderCardState extends State<_ProviderCard> {
                           const SizedBox(width: 8),
                           Text(
                             '• ${distance.toStringAsFixed(1)} km',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: kSlateText,
+                              color: motTheme.slateText,
                             ),
                           ),
                         ],
@@ -458,14 +461,14 @@ class _ProviderCardState extends State<_ProviderCard> {
                   childrenPadding: const EdgeInsets.only(bottom: 12),
                   title: Text(
                     '${_isExpanded ? "Hide" : "View"} ${rates.length} services & pricing',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: kSlateText,
+                      color: motTheme.slateText,
                     ),
                   ),
-                  iconColor: kSlateText,
-                  collapsedIconColor: kSlateText,
+                  iconColor: motTheme.slateText,
+                  collapsedIconColor: motTheme.slateText,
                   onExpansionChanged: (val) =>
                       setState(() => _isExpanded = val),
                   children: rates.map((r) => _ServiceRow(rate: r)).toList(),
@@ -482,11 +485,11 @@ class _ProviderCardState extends State<_ProviderCard> {
                     label: const Text('Call'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                      side: BorderSide(color: motTheme.subtleBorder),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      foregroundColor: kDarkNavy,
+                      foregroundColor: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -495,7 +498,7 @@ class _ProviderCardState extends State<_ProviderCard> {
                   child: ElevatedButton.icon(
                     onPressed: _isSubmitting
                         ? null
-                        : () => _createRequest(context),
+                        : () => _createRequest(),
                     icon: _isSubmitting
                         ? const SizedBox(
                             width: 18,
@@ -509,8 +512,8 @@ class _ProviderCardState extends State<_ProviderCard> {
                     label: Text(_isSubmitting ? 'Sending...' : 'Send Info'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: kDarkNavy,
-                      foregroundColor: Colors.white,
+                      backgroundColor: theme.colorScheme.onSurface,
+                      foregroundColor: theme.colorScheme.surface,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -534,18 +537,21 @@ class _InfoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: motTheme.inputBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF475569),
+          color: motTheme.slateText,
           letterSpacing: 0.5,
         ),
       ),
@@ -560,6 +566,9 @@ class _ServiceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     final name = (rate['name'] ?? 'Service').toString();
     final price = (rate['base_price'] as num?)?.toDouble();
     final priceText = price != null ? "GHC${price.toStringAsFixed(0)}" : "N/A";
@@ -571,14 +580,14 @@ class _ServiceRow extends StatelessWidget {
         children: [
           Text(
             name,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF334155)),
+            style: TextStyle(fontSize: 13, color: motTheme.slateText),
           ),
           Text(
             priceText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -595,24 +604,27 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
+          Icon(Icons.search_off_rounded, size: 64, color: motTheme.subtleBorder),
           const SizedBox(height: 16),
           Text(
             "No providers found for '$issue'",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "Try increasing your search radius.",
-            style: TextStyle(color: Color(0xFF64748B)),
+            style: TextStyle(color: motTheme.slateText),
           ),
           const SizedBox(height: 24),
           TextButton(onPressed: onBack, child: const Text("Go Back")),

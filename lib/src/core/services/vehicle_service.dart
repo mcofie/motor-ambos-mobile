@@ -69,7 +69,7 @@ class VehicleService {
         .select()
         .single();
 
-    return Vehicle.fromJson(res as Map<String, dynamic>);
+    return Vehicle.fromJson(res);
   }
 
   Future<Vehicle> updateVehicle({
@@ -112,7 +112,7 @@ class VehicleService {
         .select()
         .single();
 
-    return Vehicle.fromJson(res as Map<String, dynamic>);
+    return Vehicle.fromJson(res);
   }
 
   Future<void> deleteVehicle(String id) async {

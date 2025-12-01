@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
+import 'package:motor_ambos/src/core/widget/skeleton.dart';
 
 // MOCKING DOMAIN & PROVIDER
 class Membership {
@@ -27,7 +29,9 @@ class Membership {
   });
 }
 
-final membershipProvider = Provider<Membership>((ref) {
+final membershipProvider = FutureProvider<Membership>((ref) async {
+  // Simulate network delay
+  await Future.delayed(const Duration(seconds: 2));
   return Membership(
     id: 'MBR-8821-X99',
     tier: 'Premium',
@@ -44,17 +48,16 @@ final membershipProvider = Provider<Membership>((ref) {
 class MembershipScreen extends ConsumerWidget {
   const MembershipScreen({super.key});
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final membership = ref.watch(membershipProvider);
+    final membershipAsync = ref.watch(membershipProvider);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -65,29 +68,29 @@ class MembershipScreen extends ConsumerWidget {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: kDarkNavy),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
                       onPressed: () => context.canPop() ? context.pop() : context.go('/more'),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'My Membership',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -103,37 +106,47 @@ class MembershipScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     const SizedBox(height: 8),
-                    // The Premium Card
-                    _PremiumMembershipCard(membership: membership),
+                    membershipAsync.when(
+                      loading: () => const SkeletonCard(height: 200),
+                      error: (err, stack) => Center(child: Text('Error: $err')),
+                      data: (membership) {
+                        return Column(
+                          children: [
+                            // The Premium Card
+                            _PremiumMembershipCard(membership: membership),
 
-                    const SizedBox(height: 24),
+                            const SizedBox(height: 24),
 
-                    // Usage Dashboard
-                    Row(
-                      children: [
-                        Expanded(child: _UsageCircle(membership: membership)),
-                        const SizedBox(width: 16),
-                        Expanded(child: _SavingsCard(membership: membership)),
-                      ],
+                            // Usage Dashboard
+                            Row(
+                              children: [
+                                Expanded(child: _UsageCircle(membership: membership)),
+                                const SizedBox(width: 16),
+                                Expanded(child: _SavingsCard(membership: membership)),
+                              ],
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Benefits List
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'PLAN PERKS',
+                                style: TextStyle(
+                                  color: motTheme.slateText,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.0,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _BenefitsList(membership: membership),
+                          ],
+                        );
+                      },
                     ),
-
-                    const SizedBox(height: 32),
-
-                    // Benefits List
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'PLAN PERKS',
-                        style: TextStyle(
-                          color: kSlateText,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.0,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _BenefitsList(membership: membership),
 
                     const SizedBox(height: 32),
 
@@ -146,8 +159,8 @@ class MembershipScreen extends ConsumerWidget {
                           // TODO: Implement renewal flow
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kDarkNavy,
-                          foregroundColor: Colors.white,
+                          backgroundColor: motTheme.accent,
+                          foregroundColor: theme.colorScheme.surface,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -162,10 +175,10 @@ class MembershipScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     TextButton(
                       onPressed: () {},
-                      child: const Text(
+                      child: Text(
                         "View Billing History",
                         style: TextStyle(
-                          color: kSlateText,
+                          color: motTheme.slateText,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -185,6 +198,9 @@ class MembershipScreen extends ConsumerWidget {
 //
 // 1. PREMIUM CARD WIDGET
 //
+//
+// 1. PREMIUM CARD WIDGET
+//
 class _PremiumMembershipCard extends StatelessWidget {
   final Membership membership;
 
@@ -192,26 +208,30 @@ class _PremiumMembershipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Container(
       height: 200,
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: kDarkNavy,
+        color: motTheme.accent, // Fallback if gradient fails, but gradient covers it
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: kDarkNavy.withOpacity(0.3),
+            color: motTheme.accent.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1E293B), Color(0xFF0F172A)], // Slate gradient
+          colors: [
+            motTheme.accent.withValues(alpha: 0.8),
+            motTheme.accent,
+          ], 
         ),
       ),
       child: Column(
@@ -224,12 +244,12 @@ class _PremiumMembershipCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+                  Icon(Icons.shield_outlined, color: theme.colorScheme.onPrimary, size: 20),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     "MotorAmbos",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -239,15 +259,15 @@ class _PremiumMembershipCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   membership.tier.toUpperCase(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: theme.colorScheme.onPrimary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -262,7 +282,7 @@ class _PremiumMembershipCard extends StatelessWidget {
               Text(
                 "MEMBERSHIP ID",
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.5),
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.0,
@@ -271,8 +291,8 @@ class _PremiumMembershipCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 membership.id,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
                   fontFamily: 'Courier',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -315,13 +335,13 @@ class _CardFooterItem extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9, fontWeight: FontWeight.w600),
+          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5), fontSize: 9, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 2),
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 13,
           ),
@@ -341,8 +361,8 @@ class _UsageCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     final remaining = membership.includedCallsPerYear - membership.callsUsedThisYear;
     final percent = remaining / membership.includedCallsPerYear;
@@ -350,12 +370,12 @@ class _UsageCircle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: motTheme.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -372,17 +392,17 @@ class _UsageCircle extends StatelessWidget {
                 CircularProgressIndicator(
                   value: percent,
                   strokeWidth: 6,
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  color: kDarkNavy,
+                  backgroundColor: motTheme.inputBg,
+                  color: motTheme.accent,
                   strokeCap: StrokeCap.round,
                 ),
                 Center(
                   child: Text(
                     "$remaining",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: kDarkNavy,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -390,13 +410,13 @@ class _UsageCircle extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             "Calls Left",
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kDarkNavy),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
           ),
           Text(
             "of ${membership.includedCallsPerYear} included",
-            style: const TextStyle(fontSize: 10, color: kSlateText),
+            style: TextStyle(fontSize: 10, color: motTheme.slateText),
           ),
         ],
       ),
@@ -411,19 +431,19 @@ class _SavingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Container(
       padding: const EdgeInsets.all(16),
       height: 154,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: motTheme.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -436,23 +456,23 @@ class _SavingsCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4), // Light Green
+              color: motTheme.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.savings_rounded, color: Colors.green, size: 20),
+            child: Icon(Icons.savings_rounded, color: motTheme.success, size: 20),
           ),
           const Spacer(),
-          const Text(
+          Text(
             "Total Saved",
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kSlateText),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: motTheme.slateText),
           ),
           const SizedBox(height: 4),
           Text(
             "GHS ${membership.estimatedSavings.toInt()}",
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,
-              color: kDarkNavy,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -513,18 +533,18 @@ class _BenefitRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: motTheme.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -535,7 +555,7 @@ class _BenefitRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -547,24 +567,24 @@ class _BenefitRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: kDarkNavy,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: kSlateText,
+                  style: TextStyle(
+                    color: motTheme.slateText,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.check_circle_rounded, color: Colors.green, size: 18),
+          Icon(Icons.check_circle_rounded, color: motTheme.success, size: 18),
         ],
       ),
     );

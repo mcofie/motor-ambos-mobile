@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:motor_ambos/src/core/widget/app_shell.dart';
 import 'package:motor_ambos/src/features/auth/presentation/signup_page.dart';
 import 'package:motor_ambos/src/features/auth/presentation/login_page.dart';
+import 'package:motor_ambos/src/features/auth/presentation/splash_screen.dart';
 import 'package:motor_ambos/src/features/home/presentation/home_screen.dart';
 import 'package:motor_ambos/src/features/account/presentation/account_screen.dart';
 import 'package:motor_ambos/src/features/assist/presentation/assist_screen.dart';
@@ -41,7 +42,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final supabase = Supabase.instance.client;
 
   return GoRouter(
-    initialLocation: '/app',
+    initialLocation: '/splash',
 
     /// 🔁 Rebuild router when auth changes (login/logout / OAuth finish)
     refreshListenable: GoRouterRefreshStream(supabase.auth.onAuthStateChange),
@@ -53,7 +54,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Is the user currently on the sign-in or sign-up screen?
       final loggingIn =
           state.matchedLocation == '/sign-in' ||
-          state.matchedLocation == '/sign-up';
+          state.matchedLocation == '/sign-up' ||
+          state.matchedLocation == '/splash';
 
       // Not logged in & trying to hit a protected route → send to sign-in
       if (session == null && !loggingIn) {
@@ -70,6 +72,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
 
     routes: [
+      // Splash
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+
       // Public auth routes
       GoRoute(
         path: '/sign-in',

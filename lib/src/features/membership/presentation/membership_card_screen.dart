@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
 import 'package:motor_ambos/src/core/services/membership_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class MembershipCardScreen extends StatefulWidget {
   const MembershipCardScreen({super.key});
@@ -16,10 +17,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
   Map<String, dynamic>? _membership;
   bool _loading = true;
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
 
   @override
   void initState() {
@@ -46,8 +44,11 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -58,29 +59,29 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: kDarkNavy),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
                       onPressed: () => context.pop(),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Digital Card',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -92,10 +93,10 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
             // 2. Body Content
             Expanded(
               child: _loading
-                  ? const Center(child: CircularProgressIndicator(color: kDarkNavy))
+                  ? Center(child: CircularProgressIndicator(color: motTheme.accent))
                   : _membership == null || _membership!['is_active'] == false
-                  ? _buildEmptyState()
-                  : _buildActiveCard(),
+                  ? _buildEmptyState(theme, motTheme)
+                  : _buildActiveCard(theme, motTheme),
             ),
           ],
         ),
@@ -103,7 +104,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ThemeData theme, MotorAmbosTheme motTheme) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -114,21 +115,21 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: kDarkNavy.withOpacity(0.05),
+                color: motTheme.accent.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.card_membership_rounded, size: 48, color: kDarkNavy),
+              child: Icon(Icons.card_membership_rounded, size: 48, color: motTheme.accent),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No active membership',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: kDarkNavy),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: theme.colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'You don’t have an active MotorAmbos membership yet.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: kSlateText, height: 1.5),
+              style: TextStyle(fontSize: 14, color: motTheme.slateText, height: 1.5),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -137,8 +138,8 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
               child: ElevatedButton(
                 onPressed: () => context.go('/membership'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kDarkNavy,
-                  foregroundColor: Colors.white,
+                  backgroundColor: motTheme.accent,
+                  foregroundColor: theme.colorScheme.surface,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
@@ -154,7 +155,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
     );
   }
 
-  Widget _buildActiveCard() {
+  Widget _buildActiveCard(ThemeData theme, MotorAmbosTheme motTheme) {
     final m = _membership!;
     final membershipId = (m['membership_id'] as String?) ?? '— — — —';
     final tier = (m['tier'] as String?)?.toUpperCase() ?? 'PREMIUM';
@@ -188,19 +189,22 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
             height: 220,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: kDarkNavy,
+              color: motTheme.accent,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: kDarkNavy.withOpacity(0.4),
+                  color: motTheme.accent.withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
               ],
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1E293B), Color(0xFF0F172A)], // Slate-800 to Slate-900
+                colors: [
+                  motTheme.accent.withValues(alpha: 0.8),
+                  motTheme.accent,
+                ],
               ),
             ),
             child: Column(
@@ -212,12 +216,12 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+                        Icon(Icons.shield_outlined, color: theme.colorScheme.onPrimary, size: 20),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'MotorAmbos',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: theme.colorScheme.onPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -227,13 +231,13 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         tier,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: theme.colorScheme.onPrimary,
                           fontWeight: FontWeight.w800,
                           fontSize: 10,
                           letterSpacing: 0.5,
@@ -247,19 +251,19 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                   children: [
                     Text(
                       membershipId,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Courier',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 2.0,
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Expires $expiryText',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
                         fontSize: 12,
                       ),
                     ),
@@ -277,10 +281,10 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+              border: Border.all(color: motTheme.subtleBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -295,21 +299,21 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                   padding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Scan to Verify',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: kDarkNavy,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Show this code to your service provider',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
-                    color: kSlateText,
+                    color: motTheme.slateText,
                   ),
                 ),
               ],

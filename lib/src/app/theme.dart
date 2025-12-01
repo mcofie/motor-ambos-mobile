@@ -1,46 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'motorambos_theme_extension.dart';
 
 // Your Brand Colors
 class AppColors {
-  static const Color brandPrimary = Color(0xFF00E676); // Neon Green
-  static const Color brandAccent = Color(0xFF1A1A1A);  // Deep Black
-  static const Color error = Color(0xFFBA1A1A);
-}
+  static const Color forestGreen = Color(0xFF163300);
+  static const Color brightLime = Color(0xFF9FE870);
+  static const Color white = Color(0xFFFFFFFF);
+  
+  static const Color cardDark = Color(0xFF1A3B00);
+  
+  static const Color borderLight = Color(0xFFE2E8E0);
+  static const Color borderDark = Color(0xFF2E5C0A);
+  
+  static const Color mutedLight = Color(0xFFF2F9ED);
+  static const Color mutedDark = Color(0xFF224505);
 
-// Optional: Theme Extensions if you have custom semantic colors
-class MotorAmbosTheme extends ThemeExtension<MotorAmbosTheme> {
-  final Color? success;
-  final Color? warning;
-
-  const MotorAmbosTheme({this.success, this.warning});
-
-  @override
-  MotorAmbosTheme copyWith({Color? success, Color? warning}) {
-    return MotorAmbosTheme(
-      success: success ?? this.success,
-      warning: warning ?? this.warning,
-    );
-  }
-
-  @override
-  MotorAmbosTheme lerp(ThemeExtension<MotorAmbosTheme>? other, double t) {
-    if (other is! MotorAmbosTheme) return this;
-    return MotorAmbosTheme(
-      success: Color.lerp(success, other.success, t),
-      warning: Color.lerp(warning, other.warning, t),
-    );
-  }
-
-  static MotorAmbosTheme light = const MotorAmbosTheme(
-    success: Color(0xFF006C4C),
-    warning: Color(0xFF6C4F00),
-  );
-
-  static MotorAmbosTheme dark = const MotorAmbosTheme(
-    success: Color(0xFF00E676),
-    warning: Color(0xFFFFCC80),
-  );
+  static const Color error = Color(0xFFDC2626); // Standard Red
 }
 
 class AppTheme {
@@ -78,62 +54,62 @@ class AppTheme {
   // --- LIGHT THEME ---
   static ThemeData get light {
     const colorScheme = ColorScheme.light(
-      primary: AppColors.brandPrimary,
-      onPrimary: Colors.black, // High contrast on neon green
-      primaryContainer: Color(0xFFD1FFDC),
-      onPrimaryContainer: Color(0xFF00210E),
+      primary: AppColors.forestGreen,
+      onPrimary: AppColors.white,
+      primaryContainer: AppColors.mutedLight,
+      onPrimaryContainer: AppColors.forestGreen,
 
-      secondary: AppColors.brandAccent,
-      onSecondary: Colors.white,
-      secondaryContainer: Color(0xFFE0E0E0),
-      onSecondaryContainer: Color(0xFF1A1A1A),
+      secondary: AppColors.brightLime,
+      onSecondary: AppColors.forestGreen,
+      secondaryContainer: AppColors.borderLight,
+      onSecondaryContainer: AppColors.forestGreen,
 
-      surface: Colors.white,
-      onSurface: Color(0xFF1A1A1A),
-      surfaceContainer: Color(0xFFF5F5F5), // Light gray background
+      surface: AppColors.white,
+      onSurface: AppColors.forestGreen,
+      surfaceContainer: AppColors.white, // Cards are white in light mode
 
       error: AppColors.error,
       onError: Colors.white,
 
-      outline: Color(0xFF757575),
-      outlineVariant: Color(0xFFC2C8BC),
+      outline: AppColors.borderLight,
+      outlineVariant: AppColors.borderLight,
     );
 
     return _buildTheme(
       brightness: Brightness.light,
       colorScheme: colorScheme,
-      extension: MotorAmbosTheme.light,
+      extension: MotorAmbosTheme.light(),
     );
   }
 
   // --- DARK THEME ---
   static ThemeData get dark {
     const colorScheme = ColorScheme.dark(
-      primary: AppColors.brandPrimary,
-      onPrimary: Colors.black,
-      primaryContainer: Color(0xFF005324),
-      onPrimaryContainer: Color(0xFFD1FFDC),
+      primary: AppColors.brightLime,
+      onPrimary: AppColors.forestGreen,
+      primaryContainer: AppColors.mutedDark,
+      onPrimaryContainer: AppColors.brightLime,
 
-      secondary: Colors.white,
-      onSecondary: Colors.black,
-      secondaryContainer: Color(0xFF424242),
-      onSecondaryContainer: Colors.white,
+      secondary: AppColors.white,
+      onSecondary: AppColors.forestGreen,
+      secondaryContainer: AppColors.cardDark,
+      onSecondaryContainer: AppColors.white,
 
-      surface: Color(0xFF121212), // Deep dark
-      onSurface: Color(0xFFE2E2E2),
-      surfaceContainer: Color(0xFF1E1E1E), // Slightly lighter panel color
+      surface: AppColors.forestGreen,
+      onSurface: AppColors.white,
+      surfaceContainer: AppColors.cardDark,
 
-      error: Color(0xFFFFB4AB),
-      onError: Color(0xFF690005),
+      error: AppColors.error,
+      onError: Colors.white,
 
-      outline: Color(0xFF8E918F),
-      outlineVariant: Color(0xFF444746),
+      outline: AppColors.borderDark,
+      outlineVariant: AppColors.borderDark,
     );
 
     return _buildTheme(
       brightness: Brightness.dark,
       colorScheme: colorScheme,
-      extension: MotorAmbosTheme.dark,
+      extension: MotorAmbosTheme.dark(colorScheme),
     );
   }
 
@@ -160,7 +136,7 @@ class AppTheme {
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         centerTitle: true,
-        scrolledUnderElevation: 0, // Keeps it flat when scrolling
+        scrolledUnderElevation: 0,
       ),
 
       // Buttons
@@ -168,7 +144,6 @@ class AppTheme {
         style: FilledButton.styleFrom(
           shape: _buttonShape,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          // Ensure text on primary button is readable (Black on Green)
           foregroundColor: colorScheme.onPrimary,
           backgroundColor: colorScheme.primary,
           elevation: 0,
@@ -178,7 +153,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           shape: _buttonShape,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          side: BorderSide(color: colorScheme.outlineVariant),
+          side: BorderSide(color: colorScheme.outline),
           foregroundColor: colorScheme.onSurface,
         ),
       ),
@@ -191,7 +166,7 @@ class AppTheme {
 
       // Cards & Sheets
       cardTheme: CardThemeData(
-        color: colorScheme.surfaceContainer, // <--- CORRECT FIX
+        color: colorScheme.surfaceContainer,
         elevation: 0,
         shape: _roundedShape,
         margin: EdgeInsets.zero,
@@ -209,8 +184,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: brightness == Brightness.light
-            ? const Color(0xFFF3F4F6)
-            : const Color(0xFF1E1E1E),
+            ? AppColors.borderLight
+            : AppColors.borderDark,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -228,21 +203,21 @@ class AppTheme {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
-        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withOpacity(0.5)),
+        labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+        hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
       ),
 
       // Misc
       iconTheme: IconThemeData(color: colorScheme.onSurface),
       dividerTheme: DividerThemeData(
-        color: colorScheme.outlineVariant.withOpacity(0.5),
+        color: colorScheme.outline.withValues(alpha: 0.5),
         thickness: 1,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: AppColors.brandAccent,
-        contentTextStyle: const TextStyle(color: Colors.white),
+        backgroundColor: colorScheme.onSurface,
+        contentTextStyle: TextStyle(color: colorScheme.surface),
       ),
     );
   }

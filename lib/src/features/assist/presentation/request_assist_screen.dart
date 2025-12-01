@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:motor_ambos/src/core/models/vehicle.dart';
 import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class RequestAssistScreen extends ConsumerStatefulWidget {
   const RequestAssistScreen({
@@ -40,10 +41,6 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
   bool _isGettingLocation = false;
   bool _isFindingProviders = false;
   late final AnimationController _pulseController;
-
-  // Theme Colors
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
 
   @override
   void initState() {
@@ -93,7 +90,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       if (mounted) {
@@ -193,6 +190,9 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     // 🔁 Vehicles from Riverpod (used as fallback if no vehicle was passed)
     final vehiclesAsync = ref.watch(vehiclesProvider);
     final vehicles = vehiclesAsync.value ?? <Vehicle>[];
@@ -250,24 +250,24 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8),
             ],
           ),
           child: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
               size: 18,
-              color: kDarkNavy,
+              color: theme.colorScheme.onSurface,
             ),
             onPressed: () => context.pop(),
           ),
@@ -276,18 +276,18 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
         title: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
             ],
           ),
           child: Column(
-            children: const [
+            children: [
               Text(
                 'Motor Ambos',
                 style: TextStyle(
-                  color: kDarkNavy,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -295,7 +295,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
               Text(
                 'STEP 3: CONFIRM',
                 style: TextStyle(
-                  color: kSlateText,
+                  color: motTheme.slateText,
                   fontSize: 8,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.0,
@@ -318,13 +318,13 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
             alignment: Alignment.bottomCenter,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(30),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: kDarkNavy.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 30,
                     offset: const Offset(0, -10),
                   ),
@@ -341,7 +341,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
+                        color: motTheme.subtleBorder,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -352,9 +352,9 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
+                      color: motTheme.inputBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                      border: Border.all(color: motTheme.subtleBorder),
                     ),
                     child: Row(
                       children: [
@@ -362,7 +362,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: kDarkNavy,
+                            color: theme.colorScheme.onSurface,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -379,18 +379,18 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                             children: [
                               Text(
                                 widget.issue,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: kDarkNavy,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 vehicleText,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
-                                  color: kSlateText,
+                                  color: motTheme.slateText,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -414,17 +414,17 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4), // Light Green Bg
+                        color: motTheme.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.green.withOpacity(0.2),
+                          color: motTheme.success.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.my_location_rounded,
-                            color: Colors.green,
+                            color: motTheme.success,
                             size: 28,
                           ),
                           const SizedBox(width: 16),
@@ -432,22 +432,22 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
+                                Text(
                                   'Location Detected',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                                    color: motTheme.success,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   _locationLabel ?? '',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: kDarkNavy,
+                                    color: theme.colorScheme.onSurface,
                                     fontFamily: 'Courier',
                                   ),
                                 ),
@@ -456,9 +456,9 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                           ),
                           IconButton(
                             onPressed: _fetchLocation,
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.refresh_rounded,
-                              color: kSlateText,
+                              color: motTheme.slateText,
                             ),
                             tooltip: 'Update Location',
                           ),
@@ -469,22 +469,22 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2), // Light Red
+                        color: theme.colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
-                        children: const [
+                        children: [
                           Icon(
                             Icons.location_disabled_rounded,
-                            color: Colors.red,
+                            color: theme.colorScheme.error,
                             size: 28,
                           ),
-                          SizedBox(width: 16),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Text(
                               'Location not detected.\nPlease share your location to proceed.',
                               style: TextStyle(
-                                color: kDarkNavy,
+                                color: theme.colorScheme.onErrorContainer,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -502,12 +502,12 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                     child: ElevatedButton(
                       onPressed: hasLocation
                           ? () => _handleFindProviders(
-                              activeVehicle: activeVehicle,
-                              effectiveVehicleSummary: effectiveVehicleSummary,
-                            )
+                        activeVehicle: activeVehicle,
+                        effectiveVehicleSummary: effectiveVehicleSummary,
+                      )
                           : _fetchLocation,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kDarkNavy,
+                        backgroundColor: motTheme.accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -516,34 +516,34 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                       ),
                       child: _isFindingProviders || _isGettingLocation
                           ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
                           : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  hasLocation
-                                      ? Icons.search
-                                      : Icons.near_me_rounded,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  hasLocation
-                                      ? 'Find Providers Nearby'
-                                      : 'Share Location',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            hasLocation
+                                ? Icons.search
+                                : Icons.near_me_rounded,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            hasLocation
+                                ? 'Find Providers Nearby'
+                                : 'Share Location',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -567,8 +567,15 @@ class _MockMapPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const mapBgColor = Color(0xFFE5E7EB);
-    const roadColor = Colors.white;
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+    
+    // Use theme colors for map background
+    final mapBgColor = theme.brightness == Brightness.dark 
+        ? const Color(0xFF1E293B) // Slate-800 for dark mode
+        : const Color(0xFFE5E7EB); // Slate-200 for light mode
+        
+    final roadColor = theme.cardColor;
 
     return Container(
       color: mapBgColor,
@@ -588,24 +595,20 @@ class _MockMapPreview extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(
-                      0xFF0F172A,
-                    ).withOpacity(1.0 - controller.value),
+                    color: motTheme.accent.withValues(alpha: 1.0 - controller.value),
                     width: 1,
                   ),
-                  color: const Color(
-                    0xFF0F172A,
-                  ).withOpacity(0.05 * (1.0 - controller.value)),
+                  color: motTheme.accent.withValues(alpha: 0.05 * (1.0 - controller.value)),
                 ),
               );
             },
           ),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F172A),
+            decoration: BoxDecoration(
+              color: motTheme.accent,
               shape: BoxShape.circle,
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black26,
                   blurRadius: 15,

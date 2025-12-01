@@ -48,4 +48,9 @@ class MembershipService {
 
     return row;
   }
+
+  Future<void> enroll(String tier) async {
+    // TODO: Implement actual enrollment logic
+    await Future.delayed(const Duration(seconds: 1));
+  }
 }

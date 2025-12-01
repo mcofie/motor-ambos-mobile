@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:motor_ambos/src/core/services/membership_service.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -57,16 +59,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Extract First Name
       final parts = displayName.trim().split(RegExp(r'\s+'));
-      if (mounted)
+      if (mounted) {
         setState(
           () => _firstName = parts.isNotEmpty ? parts.first : displayName,
         );
+      }
     } catch (_) {
       final parts = fallbackName.trim().split(RegExp(r'\s+'));
-      if (mounted)
+      if (mounted) {
         setState(
           () => _firstName = parts.isNotEmpty ? parts.first : fallbackName,
         );
+      }
     }
   }
 
@@ -125,11 +129,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // 2. Theme Colors
-    const kBgColor = Color(0xFFF8FAFC); // Very light grey/blue
-    const kDarkNavy = Color(0xFF0F172A); // The dark text/button color
+    final theme = Theme.of(context);
+
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -154,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     expiryDate: expiryDate,
                     callsUsedThisYear: callsUsed,
                     estimatedSavings: savings,
-                  ),
+                  ).animate().fade(duration: 600.ms).slideY(begin: 0.1, end: 0),
 
                   // Loading Overlay
                   if (_loadingMembership)
@@ -162,11 +166,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(24),
                         child: Container(
-                          color: Colors.white.withOpacity(0.5),
+                          color: theme.cardColor.withValues(alpha: 0.5),
                           alignment: Alignment.center,
-                          child: const CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: kDarkNavy,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -179,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
                           child: Container(
-                            color: kDarkNavy.withOpacity(0.85),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
                             alignment: Alignment.center,
                             padding: const EdgeInsets.all(24),
                             child: Column(
@@ -188,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: theme.colorScheme.surface.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -198,10 +202,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                const Text(
+                                Text(
                                   'Upgrade to Member',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: theme.colorScheme.surface,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -210,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   'Get free towing & priority rescue',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: theme.colorScheme.surface.withValues(alpha: 0.7),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -220,8 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: ElevatedButton(
                                     onPressed: () => context.go('/membership'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: kDarkNavy,
+                                      backgroundColor: theme.colorScheme.surface,
+                                      foregroundColor: theme.colorScheme.onSurface,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -254,19 +258,19 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
 
               // MANAGE SECTION
-              const Text(
+              Text(
                 'Account & Vehicle',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: kDarkNavy,
+                  color: theme.colorScheme.onSurface,
                   letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 16),
 
               // Utility Grid
-              const _UtilityGrid(),
+              const _UtilityGrid().animate().fade(duration: 600.ms, delay: 200.ms).slideY(begin: 0.1, end: 0),
             ],
           ),
         ),
@@ -299,6 +303,8 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
     final (greetingText, greetingIcon, iconColor) = _getGreetingData();
     final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
 
@@ -316,8 +322,8 @@ class _HeaderSection extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     greetingText,
-                    style: const TextStyle(
-                      color: Color(0xFF64748B), // Slate 500
+                    style: TextStyle(
+                      color: motTheme.slateText, // Slate 500
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -327,8 +333,8 @@ class _HeaderSection extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 userName,
-                style: const TextStyle(
-                  color: Color(0xFF0F172A), // Slate 900
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface, // Slate 900
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
@@ -347,12 +353,12 @@ class _HeaderSection extends StatelessWidget {
             height: 50,
             width: 50,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey[200]!, width: 1.5),
+              border: Border.all(color: motTheme.subtleBorder, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -364,10 +370,10 @@ class _HeaderSection extends StatelessWidget {
                 Center(
                   child: Text(
                     initial,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -379,10 +385,10 @@ class _HeaderSection extends StatelessWidget {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
+                      color: theme.colorScheme.error,
                       // Red for alert, or Green for status
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+                      border: Border.all(color: theme.cardColor, width: 1.5),
                     ),
                   ),
                 ),
@@ -412,6 +418,20 @@ class _MembershipCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    // Note: Membership card usually keeps a specific dark look even in light mode,
+    // or we can make it adapt. For now, I'll keep it dark/navy as a "premium" card look,
+    // but use theme colors where appropriate if we want it to switch.
+    // However, credit cards often have fixed colors.
+    // Let's stick to the "Dark Navy" look for the card itself as it's a brand element,
+    // but we can use theme values if we want it to invert in dark mode.
+    // Given the design, a dark card looks good on both light and dark backgrounds.
+    // I will keep the hardcoded dark color for the card background to maintain the "Physical Card" look,
+    // but ensure text contrasts correctly.
+
+    final cardBg = const Color(0xFF0F172A); // Keep fixed for card identity
+    final cardText = Colors.white;
+
     final expiryText =
         '${expiryDate.month.toString().padLeft(2, '0')}/${expiryDate.year.toString().substring(2)}';
 
@@ -420,11 +440,11 @@ class _MembershipCard extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 260),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), // Dark Navy Solid
+        color: cardBg,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.3),
+            color: cardBg.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -438,16 +458,16 @@ class _MembershipCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.shield_outlined,
-                    color: Colors.white,
+                    color: cardText,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'MotorAmbos',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: cardText.withValues(alpha: 0.9),
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),
@@ -460,13 +480,13 @@ class _MembershipCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: cardText.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   tier,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: cardText,
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
@@ -480,16 +500,17 @@ class _MembershipCard extends StatelessWidget {
 
           Row(
             children: [
-              _CardStat(value: '$callsUsedThisYear', label: 'Calls Used'),
+              _CardStat(value: '$callsUsedThisYear', label: 'Calls Used', textColor: cardText),
               Container(
                 height: 32,
                 width: 1,
-                color: Colors.white.withOpacity(0.1),
+                color: cardText.withValues(alpha: 0.1),
                 margin: const EdgeInsets.symmetric(horizontal: 24),
               ),
               _CardStat(
                 value: 'GHS ${estimatedSavings.toStringAsFixed(0)}',
                 label: 'Saved',
+                textColor: cardText,
               ),
             ],
           ),
@@ -505,8 +526,8 @@ class _MembershipCard extends StatelessWidget {
                 children: [
                   Text(
                     membershipId,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: cardText,
                       fontFamily: 'Courier',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -517,13 +538,13 @@ class _MembershipCard extends StatelessWidget {
                   Text(
                     'Exp $expiryText',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: cardText.withValues(alpha: 0.5),
                       fontSize: 11,
                     ),
                   ),
                 ],
               ),
-              const Icon(Icons.nfc, color: Colors.white30, size: 32),
+              Icon(Icons.nfc, color: cardText.withValues(alpha: 0.3), size: 32),
             ],
           ),
         ],
@@ -535,8 +556,9 @@ class _MembershipCard extends StatelessWidget {
 class _CardStat extends StatelessWidget {
   final String value;
   final String label;
+  final Color textColor;
 
-  const _CardStat({required this.value, required this.label});
+  const _CardStat({required this.value, required this.label, required this.textColor});
 
   @override
   Widget build(BuildContext context) {
@@ -545,15 +567,15 @@ class _CardStat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: textColor,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11),
+          style: TextStyle(color: textColor.withValues(alpha: 0.6), fontSize: 11),
         ),
       ],
     );
@@ -577,7 +599,7 @@ class _EmergencyActionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEF4444).withOpacity(0.4),
+            color: const Color(0xFFEF4444).withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -605,7 +627,7 @@ class _EmergencyActionCard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: const Text(
@@ -632,7 +654,7 @@ class _EmergencyActionCard extends StatelessWidget {
                       Text(
                         'Towing, Battery, Fuel & More',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -648,7 +670,7 @@ class _EmergencyActionCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -688,7 +710,7 @@ class _UtilityGrid extends StatelessWidget {
           child: _UtilityCard(
             icon: Icons.history_rounded,
             label: 'History',
-            onTap: () => context.go('/history'),
+            onTap: () => context.push('/history'),
           ),
         ),
       ],
@@ -709,12 +731,15 @@ class _UtilityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Container(
       height: 70,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+        border: Border.all(color: motTheme.subtleBorder),
       ),
       child: InkWell(
         onTap: onTap,
@@ -725,20 +750,20 @@ class _UtilityCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
+                decoration: BoxDecoration(
+                  color: motTheme.inputBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 18, color: const Color(0xFF334155)),
+                child: Icon(icon, size: 18, color: theme.colorScheme.onSurface),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: Color(0xFF0F172A),
+                    color: theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),

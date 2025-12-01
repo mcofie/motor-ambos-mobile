@@ -29,4 +29,24 @@ class Vehicle {
       isPrimary: json['is_primary'] as bool? ?? false,
     );
   }
+
+  Vehicle copyWith({
+    String? id,
+    String? name,
+    String? make,
+    String? model,
+    int? year,
+    String? plate,
+    bool? isPrimary,
+  }) {
+    return Vehicle(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      make: make ?? this.make,
+      model: model ?? this.model,
+      year: year ?? this.year,
+      plate: plate ?? this.plate,
+      isPrimary: isPrimary ?? this.isPrimary,
+    );
+  }
 }

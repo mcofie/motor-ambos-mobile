@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart'; // 👈 Real 3D Viewer
 
 import 'package:motor_ambos/src/core/models/vehicle.dart';
 import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
+import 'package:motor_ambos/src/core/utils/toast_utils.dart';
 
 class AddVehicleScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -34,10 +37,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
     {'label': 'Bike', 'icon': Icons.two_wheeler_rounded},
   ];
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
 
   bool get isEdit => widget.vehicle != null;
 
@@ -92,12 +92,16 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
       }
 
       ref.invalidate(vehiclesProvider);
-      if (mounted) context.pop();
+      if (mounted) {
+        context.pop();
+        HapticFeedback.mediumImpact();
+        ToastUtils.showSuccess(context, title: isEdit ? 'Vehicle Updated' : 'Vehicle Added');
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to save vehicle: $e')));
+      if (mounted) {
+        ToastUtils.showError(context, title: 'Failed to save vehicle', description: e.toString());
+      }
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -106,25 +110,28 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: kBgColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
             ],
           ),
           child: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_ios_new_rounded,
               size: 18,
-              color: kDarkNavy,
+              color: theme.colorScheme.onSurface,
             ),
             onPressed: () => context.pop(),
           ),
@@ -132,18 +139,18 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
         centerTitle: true,
         title: Column(
           children: [
-            const Text(
+            Text(
               'Motor Ambos',
               style: TextStyle(
-                color: kDarkNavy,
+                color: theme.colorScheme.onSurface,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               isEdit ? 'EDIT VEHICLE' : 'ADD VEHICLE',
-              style: const TextStyle(
-                color: kSlateText,
+              style: TextStyle(
+                color: motTheme.slateText,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
@@ -249,29 +256,29 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: theme.cardColor,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: Colors.grey.withOpacity(0.15),
+                                color: motTheme.subtleBorder,
                               ),
                             ),
                             child: SwitchListTile.adaptive(
                               value: _isPrimary,
-                              activeColor: kDarkNavy,
+                              activeTrackColor: theme.colorScheme.onSurface,
                               contentPadding: EdgeInsets.zero,
-                              title: const Text(
+                              title: Text(
                                 'Set as Primary Vehicle',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: kDarkNavy,
+                                  color: theme.colorScheme.onSurface,
                                   fontSize: 14,
                                 ),
                               ),
-                              subtitle: const Text(
+                              subtitle: Text(
                                 'Default for assistance requests',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: kSlateText,
+                                  color: motTheme.slateText,
                                 ),
                               ),
                               onChanged: (val) =>
@@ -293,9 +300,9 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               border: Border(
-                top: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                top: BorderSide(color: motTheme.subtleBorder),
               ),
             ),
             child: SizedBox(
@@ -304,8 +311,8 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kDarkNavy,
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.onSurface,
+                  foregroundColor: theme.colorScheme.surface,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -322,7 +329,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                       )
                     : Text(
                         isEdit ? 'Save Changes' : 'Add Vehicle',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -350,11 +357,11 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
           children: [
             // Background Gradient
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF1E293B), kDarkNavy],
+                  colors: [Color(0xFF1E293B), Theme.of(context).colorScheme.onSurface],
                 ),
               ),
             ),
@@ -386,7 +393,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white24),
                 ),
@@ -433,15 +440,15 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isSelected ? kDarkNavy : Colors.white,
+                color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? kDarkNavy : Colors.grey.withOpacity(0.2),
+                  color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).extension<MotorAmbosTheme>()!.subtleBorder,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: kDarkNavy.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -453,7 +460,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                   Icon(
                     type['icon'] as IconData,
                     size: 18,
-                    color: isSelected ? Colors.white : kSlateText,
+                    color: isSelected ? Theme.of(context).colorScheme.surface : Theme.of(context).extension<MotorAmbosTheme>()!.slateText,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -461,7 +468,7 @@ class _AddVehicleScreenState extends ConsumerState<AddVehicleScreen> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : kSlateText,
+                      color: isSelected ? Theme.of(context).colorScheme.surface : Theme.of(context).extension<MotorAmbosTheme>()!.slateText,
                     ),
                   ),
                 ],
@@ -482,7 +489,7 @@ class _GridBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.05)
+      ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 1;
 
     const double step = 40.0;
@@ -508,10 +515,10 @@ class _InputLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF94A3B8), // Slate-400
+        color: Theme.of(context).extension<MotorAmbosTheme>()!.slateText, // Slate-400
         letterSpacing: 0.5,
       ),
     );
@@ -535,16 +542,16 @@ class _StyledTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9), // Slate-100
+        color: Theme.of(context).extension<MotorAmbosTheme>()!.inputBg, // Slate-100
         borderRadius: BorderRadius.circular(16),
       ),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
         validator: validator,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF0F172A),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         decoration: InputDecoration(
           hintText: hint,

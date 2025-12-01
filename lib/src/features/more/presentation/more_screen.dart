@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
+import 'package:motor_ambos/src/core/utils/toast_utils.dart';
+import 'package:motor_ambos/src/core/widget/skeleton.dart';
 
 class MoreScreen extends StatefulWidget {
   const MoreScreen({super.key});
@@ -14,11 +18,6 @@ class _MoreScreenState extends State<MoreScreen> {
   String _userName = '';
   String _email = '';
   String? _membershipTier;
-
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
 
   @override
   void initState() {
@@ -81,6 +80,7 @@ class _MoreScreenState extends State<MoreScreen> {
   }
 
   Future<void> _handleSignOut(BuildContext context) async {
+    HapticFeedback.heavyImpact();
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -109,7 +109,7 @@ class _MoreScreenState extends State<MoreScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to sign out: $e')));
+        ToastUtils.showError(context, title: 'Failed to sign out', description: e.toString());
       }
     }
   }
@@ -119,16 +119,19 @@ class _MoreScreenState extends State<MoreScreen> {
     final displayName = _userName.isNotEmpty ? _userName : 'Driver';
     final displayEmail = _email.isNotEmpty ? _email : 'Add your email in Profile';
 
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: kBgColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'More',
           style: TextStyle(
-            color: kDarkNavy,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
@@ -182,7 +185,7 @@ class _MoreScreenState extends State<MoreScreen> {
                   ),
                   _SettingsTile(
                     icon: Icons.policy_rounded,
-                    iconColor: kSlateText,
+                    iconColor: motTheme.slateText,
                     title: 'Legal & Privacy',
                     onTap: () {},
                   ),
@@ -197,9 +200,9 @@ class _MoreScreenState extends State<MoreScreen> {
                 child: TextButton(
                   onPressed: () => _handleSignOut(context),
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.red,
+                    foregroundColor: theme.colorScheme.error,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: const Color(0xFFFEF2F2), // Light Red
+                    backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -220,11 +223,11 @@ class _MoreScreenState extends State<MoreScreen> {
 
               const SizedBox(height: 24),
 
-              const Center(
+              Center(
                 child: Text(
                   'Version 1.0.2 (Build 40)',
                   style: TextStyle(
-                    color: kSlateText,
+                    color: motTheme.slateText,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -259,19 +262,19 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: motTheme.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -285,20 +288,20 @@ class _ProfileHeader extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFF1F5F9),
-              border: Border.all(color: Colors.grey.withOpacity(0.1)),
+              color: motTheme.inputBg,
+              border: Border.all(color: motTheme.subtleBorder),
             ),
             alignment: Alignment.center,
             child: loading
-                ? const CircularProgressIndicator(strokeWidth: 2)
+                ? const Skeleton(width: 64, height: 64, radius: 32)
                 : Text(
-              userName.isNotEmpty ? userName[0].toUpperCase() : 'D',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: kDarkNavy,
-              ),
-            ),
+                    userName.isNotEmpty ? userName[0].toUpperCase() : 'D',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
           ),
           const SizedBox(width: 16),
           // Info
@@ -308,8 +311,8 @@ class _ProfileHeader extends StatelessWidget {
               children: [
                 Text(
                   userName,
-                  style: const TextStyle(
-                    color: kDarkNavy,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -319,8 +322,8 @@ class _ProfileHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   email,
-                  style: const TextStyle(
-                    color: kSlateText,
+                  style: TextStyle(
+                    color: motTheme.slateText,
                     fontSize: 13,
                   ),
                   maxLines: 1,
@@ -331,13 +334,13 @@ class _ProfileHeader extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: kDarkNavy.withOpacity(0.1),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       tier!.toUpperCase(),
-                      style: const TextStyle(
-                        color: kDarkNavy,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -351,7 +354,7 @@ class _ProfileHeader extends StatelessWidget {
           // Edit Button
           IconButton(
             onPressed: onEdit,
-            icon: const Icon(Icons.edit_rounded, color: kSlateText, size: 20),
+            icon: Icon(Icons.edit_rounded, color: motTheme.slateText, size: 20),
           ),
         ],
       ),
@@ -370,7 +373,8 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -381,22 +385,22 @@ class _SettingsGroup extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               title.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: kSlateText,
+                color: motTheme.slateText,
                 letterSpacing: 1.0,
               ),
             ),
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.withOpacity(0.15)),
+              border: Border.all(color: motTheme.subtleBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
+                  color: Colors.black.withValues(alpha: 0.02),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -411,7 +415,7 @@ class _SettingsGroup extends StatelessWidget {
                       height: 1,
                       indent: 60,
                       endIndent: 20,
-                      color: Colors.grey.withOpacity(0.1),
+                      color: motTheme.subtleBorder,
                     ),
                 ],
               ],
@@ -443,8 +447,8 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Material(
       color: Colors.transparent,
@@ -459,7 +463,7 @@ class _SettingsTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
@@ -471,10 +475,10 @@ class _SettingsTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     if (subtitle != null)
@@ -482,8 +486,8 @@ class _SettingsTile extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           subtitle!,
-                          style: const TextStyle(
-                            color: kSlateText,
+                          style: TextStyle(
+                            color: motTheme.slateText,
                             fontSize: 12,
                           ),
                         ),
@@ -491,7 +495,7 @@ class _SettingsTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: kSlateText),
+              Icon(Icons.arrow_forward_ios_rounded, size: 14, color: motTheme.slateText),
             ],
           ),
         ),

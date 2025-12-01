@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:motor_ambos/src/core/models/vehicle.dart';
 import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class AssistScreen extends ConsumerStatefulWidget {
   const AssistScreen({super.key});
@@ -22,9 +23,8 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Theme Colors
-    const kBgColor = Color(0xFFF8FAFC); // Slate-50
-    const kDarkNavy = Color(0xFF0F172A); // Slate-900
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     final isEmergency = _modeIndex == 0;
 
@@ -48,7 +48,7 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
     final vehiclesError = vehiclesAsync.hasError ? vehiclesAsync.error : null;
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -58,12 +58,12 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Assistance',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: kDarkNavy,
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -72,11 +72,11 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                      border: Border.all(color: motTheme.subtleBorder),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_none_rounded,
-                      color: kDarkNavy,
+                      color: theme.colorScheme.onSurface,
                       size: 20,
                     ),
                   ),
@@ -147,13 +147,13 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
     final selected = await showModalBottomSheet<Vehicle>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        const kDarkNavy = Color(0xFF0F172A);
-        const kSlateText = Color(0xFF64748B);
+        final theme = Theme.of(context);
+        final motTheme = theme.extension<MotorAmbosTheme>()!;
 
         return SafeArea(
           top: false,
@@ -168,7 +168,7 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: motTheme.subtleBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -176,20 +176,20 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Choose vehicle',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: kDarkNavy,
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.2,
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Select the vehicle that needs help.',
-                    style: TextStyle(fontSize: 13, color: kSlateText),
+                    style: TextStyle(fontSize: 13, color: motTheme.slateText),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -210,10 +210,10 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: theme.cardColor,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.grey.withOpacity(0.25),
+                              color: motTheme.subtleBorder,
                             ),
                           ),
                           child: Row(
@@ -221,12 +221,12 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F5F9),
+                                  color: motTheme.inputBg,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.directions_car_filled_rounded,
-                                  color: kDarkNavy,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -236,18 +236,18 @@ class _AssistScreenState extends ConsumerState<AssistScreen> {
                                   children: [
                                     Text(
                                       title,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
-                                        color: kDarkNavy,
+                                        color: theme.colorScheme.onSurface,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       subtitle,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: kSlateText,
+                                        color: motTheme.slateText,
                                       ),
                                     ),
                                   ],
@@ -289,9 +289,9 @@ class _ModernToggle extends StatelessWidget {
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Theme.of(context).extension<MotorAmbosTheme>()!.subtleBorder),
       ),
       child: Row(
         children: [
@@ -324,8 +324,8 @@ class _ToggleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Expanded(
       child: GestureDetector(
@@ -333,7 +333,7 @@ class _ToggleItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isSelected ? kDarkNavy : Colors.transparent,
+            color: isSelected ? theme.colorScheme.onSurface : Colors.transparent,
             borderRadius: BorderRadius.circular(99),
           ),
           alignment: Alignment.center,
@@ -342,7 +342,7 @@ class _ToggleItem extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: isSelected ? Colors.white : kSlateText,
+              color: isSelected ? theme.colorScheme.surface : motTheme.slateText,
             ),
           ),
         ),
@@ -373,8 +373,8 @@ class _EmergencyBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     final issues = [
       {
@@ -411,20 +411,20 @@ class _EmergencyBody extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'How can we help?',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: kDarkNavy,
+              color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Select the service you need right now.',
-            style: TextStyle(fontSize: 14, color: kSlateText),
+            style: TextStyle(fontSize: 14, color: motTheme.slateText),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -461,10 +461,10 @@ class _EmergencyBody extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'For Vehicle',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: kDarkNavy,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -503,25 +503,25 @@ class _IssueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
-    final bgColor = isSelected ? kDarkNavy : Colors.white;
-    final mainTextColor = isSelected ? Colors.white : kDarkNavy;
-    final subTextColor = isSelected ? Colors.white70 : kSlateText;
+    final bgColor = isSelected ? theme.colorScheme.onSurface : theme.cardColor;
+    final mainTextColor = isSelected ? theme.colorScheme.surface : theme.colorScheme.onSurface;
+    final subTextColor = isSelected ? theme.colorScheme.surface.withValues(alpha: 0.7) : motTheme.slateText;
 
     Color iconBg;
     Color iconColor;
 
     if (isSelected) {
-      iconBg = Colors.white.withOpacity(0.15);
-      iconColor = Colors.white;
+      iconBg = theme.colorScheme.surface.withValues(alpha: 0.15);
+      iconColor = theme.colorScheme.surface;
     } else if (isAlert) {
-      iconBg = const Color(0xFFFEF2F2);
-      iconColor = const Color(0xFFEF4444);
+      iconBg = theme.colorScheme.errorContainer;
+      iconColor = theme.colorScheme.error;
     } else {
-      iconBg = const Color(0xFFF1F5F9);
-      iconColor = const Color(0xFF334155);
+      iconBg = motTheme.inputBg;
+      iconColor = theme.colorScheme.onSurfaceVariant;
     }
 
     return Material(
@@ -530,10 +530,10 @@ class _IssueCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         side: isSelected
             ? BorderSide.none
-            : BorderSide(color: Colors.grey.withOpacity(0.15)),
+            : BorderSide(color: motTheme.subtleBorder),
       ),
       elevation: isSelected ? 8 : 0,
-      shadowColor: kDarkNavy.withOpacity(0.2),
+      shadowColor: Colors.black.withValues(alpha: 0.2),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
@@ -603,7 +603,7 @@ class _ActiveVehicleCard extends StatelessWidget {
       return Container(
         height: 80,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
         ),
         alignment: Alignment.center,
@@ -615,13 +615,13 @@ class _ActiveVehicleCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFFEF2F2),
+          color: Theme.of(context).colorScheme.errorContainer,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.red.withOpacity(0.2)),
+          border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2)),
         ),
-        child: const Text(
+        child: Text(
           'Failed to load vehicle.',
-          style: TextStyle(color: Colors.red),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
         ),
       );
     }
@@ -630,19 +630,19 @@ class _ActiveVehicleCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          border: Border.all(color: Theme.of(context).extension<MotorAmbosTheme>()!.subtleBorder),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF1F5F9),
+              decoration: BoxDecoration(
+                color: Theme.of(context).extension<MotorAmbosTheme>()!.inputBg,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add_rounded, color: Color(0xFF0F172A)),
+              child: Icon(Icons.add_rounded, color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(width: 16),
             const Text(
@@ -663,12 +663,12 @@ class _ActiveVehicleCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: Theme.of(context).extension<MotorAmbosTheme>()!.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -679,12 +679,12 @@ class _ActiveVehicleCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9), // Light Slate
+              color: Theme.of(context).extension<MotorAmbosTheme>()!.inputBg, // Light Slate
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.directions_car_filled_rounded,
-              color: Color(0xFF0F172A),
+              color: Theme.of(context).colorScheme.onSurface,
               size: 24,
             ),
           ),
@@ -695,18 +695,18 @@ class _ActiveVehicleCard extends StatelessWidget {
               children: [
                 Text(
                   vehicle!.displayLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF0F172A),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "${vehicle!.plate ?? 'No Plate'} • ${vehicle!.year ?? 'Year N/A'}",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF64748B),
+                    color: Theme.of(context).extension<MotorAmbosTheme>()!.slateText,
                   ),
                 ),
               ],
@@ -744,8 +744,8 @@ class _StickyBottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+        color: Theme.of(context).cardColor,
+        border: Border(top: BorderSide(color: Theme.of(context).extension<MotorAmbosTheme>()!.subtleBorder)),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -753,8 +753,8 @@ class _StickyBottomBar extends StatelessWidget {
         child: ElevatedButton(
           onPressed: hasVehicle ? onContinue : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0F172A), // Dark Navy
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.onSurface, // Dark Navy
+            foregroundColor: Theme.of(context).colorScheme.surface,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -785,8 +785,8 @@ class _ServicesBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     final services = [
       {
@@ -820,12 +820,12 @@ class _ServicesBody extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.withOpacity(0.15)),
+            border: Border.all(color: motTheme.subtleBorder),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -835,11 +835,11 @@ class _ServicesBody extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
+                decoration: BoxDecoration(
+                  color: motTheme.inputBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(s['icon'] as IconData, color: kDarkNavy, size: 20),
+                child: Icon(s['icon'] as IconData, color: theme.colorScheme.onSurface, size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -848,16 +848,16 @@ class _ServicesBody extends StatelessWidget {
                   children: [
                     Text(
                       s['title'] as String,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       s['desc'] as String,
-                      style: TextStyle(color: kSlateText, fontSize: 13),
+                      style: TextStyle(color: motTheme.slateText, fontSize: 13),
                     ),
                   ],
                 ),
@@ -869,15 +869,15 @@ class _ServicesBody extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: kDarkNavy.withOpacity(0.05),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text(
+                child: Text(
                   'Coming soon',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: kDarkNavy,
+                    color: theme.colorScheme.onSurface,
                     letterSpacing: 0.3,
                   ),
                 ),

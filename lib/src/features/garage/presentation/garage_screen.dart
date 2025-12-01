@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
 
 import 'package:motor_ambos/src/core/models/vehicle.dart';
 import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
+import 'package:motor_ambos/src/core/widget/skeleton.dart';
 
 class GarageScreen extends ConsumerWidget {
   const GarageScreen({super.key});
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+
     final vehiclesAsync = ref.watch(vehiclesProvider);
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -27,41 +29,17 @@ class GarageScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: kDarkNavy,
-                      ),
-                      onPressed: () =>
-                          context.canPop() ? context.pop() : context.go('/'),
-                    ),
-                  ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'My Garage',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  // Spacer to balance the back button width
-                  const SizedBox(width: 40),
                 ],
               ),
             ),
@@ -73,18 +51,16 @@ class GarageScreen extends ConsumerWidget {
                   ref.invalidate(vehiclesProvider);
                   await ref.read(vehiclesProvider.future);
                 },
-                color: kDarkNavy,
+                color: theme.colorScheme.onSurface,
                 child: vehiclesAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: kDarkNavy),
-                  ),
+                  loading: () => const SkeletonList(itemCount: 3, itemHeight: 140),
                   error: (e, st) => Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
                         'Failed to load vehicles.\n$e',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: Colors.red),
                       ),
                     ),
                   ),
@@ -106,6 +82,7 @@ class GarageScreen extends ConsumerWidget {
                           onTap: () =>
                               context.pushNamed('garage-add', extra: v),
                           onDelete: () async {
+                            HapticFeedback.heavyImpact();
                             final ok =
                                 await showDialog<bool>(
                                   context: context,
@@ -144,7 +121,7 @@ class GarageScreen extends ConsumerWidget {
                             await service.setPrimaryVehicle(v.id);
                             ref.invalidate(vehiclesProvider);
                           },
-                        );
+                        ).animate().fade(duration: 400.ms, delay: (50 * index).ms).slideY(begin: 0.1, end: 0);
                       },
                     );
                   },
@@ -156,9 +133,9 @@ class GarageScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: theme.cardColor,
                 border: Border(
-                  top: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                  top: BorderSide(color: theme.extension<MotorAmbosTheme>()!.subtleBorder),
                 ),
               ),
               child: SizedBox(
@@ -167,8 +144,8 @@ class GarageScreen extends ConsumerWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => context.pushNamed('garage-add'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kDarkNavy,
-                    foregroundColor: Colors.white,
+                    backgroundColor: theme.colorScheme.onSurface,
+                    foregroundColor: theme.colorScheme.surface,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -204,18 +181,17 @@ class _VehicleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Colors
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: motTheme.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -235,12 +211,12 @@ class _VehicleTile extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9), // Light Slate
+                    color: motTheme.inputBg, // Light Slate
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.directions_car_filled_rounded,
-                    color: kDarkNavy,
+                    color: theme.colorScheme.onSurface,
                     size: 24,
                   ),
                 ),
@@ -256,10 +232,10 @@ class _VehicleTile extends StatelessWidget {
                           Flexible(
                             child: Text(
                               vehicle.displayLabel,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: kDarkNavy,
+                                color: theme.colorScheme.onSurface,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -272,15 +248,15 @@ class _VehicleTile extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: kDarkNavy.withOpacity(0.1),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(99),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Primary',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: kDarkNavy,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                             ),
@@ -297,9 +273,9 @@ class _VehicleTile extends StatelessWidget {
                               vehicle.year!.trim().isNotEmpty)
                             vehicle.year,
                         ].whereType<String>().join(' • '),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: kSlateText,
+                          color: motTheme.slateText,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -309,7 +285,7 @@ class _VehicleTile extends StatelessWidget {
 
                 // Actions Menu
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded, color: kSlateText),
+                  icon: Icon(Icons.more_vert_rounded, color: motTheme.slateText),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -323,25 +299,25 @@ class _VehicleTile extends StatelessWidget {
                     }
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'edit',
                       child: Row(
                         children: [
-                          Icon(Icons.edit_rounded, size: 18, color: kSlateText),
+                          Icon(Icons.edit_rounded, size: 18, color: motTheme.slateText),
                           SizedBox(width: 12),
                           Text('Edit'),
                         ],
                       ),
                     ),
                     if (!vehicle.isPrimary)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'primary',
                         child: Row(
                           children: [
                             Icon(
                               Icons.check_circle_outline_rounded,
                               size: 18,
-                              color: kSlateText,
+                              color: motTheme.slateText,
                             ),
                             SizedBox(width: 12),
                             Text('Set as Primary'),
@@ -380,8 +356,8 @@ class _EmptyGarageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Center(
       child: Padding(
@@ -393,28 +369,28 @@ class _EmptyGarageView extends StatelessWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: kDarkNavy.withOpacity(0.05),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.directions_car_filled_rounded,
                 size: 48,
-                color: kDarkNavy,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No vehicles yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: kDarkNavy,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Add your car to get faster assistance and access membership perks.',
-              style: TextStyle(fontSize: 14, color: kSlateText, height: 1.5),
+              style: TextStyle(fontSize: 14, color: motTheme.slateText, height: 1.5),
               textAlign: TextAlign.center,
             ),
           ],

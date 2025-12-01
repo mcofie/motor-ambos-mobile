@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:motor_ambos/src/core/services/auth_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -19,10 +20,8 @@ class _SignupPageState extends State<SignupPage> {
   bool _loading = false;
   String? _errorText;
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
+
 
   @override
   void dispose() {
@@ -70,8 +69,11 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -87,11 +89,11 @@ class _SignupPageState extends State<SignupPage> {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: kDarkNavy.withOpacity(0.2),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
@@ -105,23 +107,23 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Create Account',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: kDarkNavy,
+                      color: theme.colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Join MotorAmbos to get roadside\nassistance anywhere, anytime.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: kSlateText,
+                      color: motTheme.slateText,
                       height: 1.5,
                     ),
                   ),
@@ -133,9 +135,9 @@ class _SignupPageState extends State<SignupPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2), // Light Red
+                        color: theme.colorScheme.errorContainer, // Light Red
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.red.withOpacity(0.1)),
+                        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.1)),
                       ),
                       child: Row(
                         children: [
@@ -148,11 +150,11 @@ class _SignupPageState extends State<SignupPage> {
                           Expanded(
                             child: Text(
                               _errorText!,
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
+                                style: TextStyle(
+                                  color: theme.colorScheme.error,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                             ),
                           ),
                         ],
@@ -215,8 +217,8 @@ class _SignupPageState extends State<SignupPage> {
                     child: ElevatedButton(
                       onPressed: _loading ? null : _onSignUp,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kDarkNavy,
-                        foregroundColor: Colors.white,
+                        backgroundColor: theme.colorScheme.onSurface,
+                        foregroundColor: theme.colorScheme.surface,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -247,18 +249,18 @@ class _SignupPageState extends State<SignupPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Already have an account?',
-                        style: TextStyle(color: kSlateText),
+                        style: TextStyle(color: motTheme.slateText),
                       ),
                       TextButton(
                         onPressed: _loading
                             ? null
                             : () => context.go('/sign-in'),
-                        child: const Text(
+                        child: Text(
                           'Sign in',
                           style: TextStyle(
-                            color: kDarkNavy,
+                            color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -289,10 +291,10 @@ class _InputLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF94A3B8), // Slate-400
+        color: Theme.of(context).extension<MotorAmbosTheme>()!.slateText, // Slate-400
         letterSpacing: 0.5,
       ),
     );
@@ -320,7 +322,7 @@ class _StyledTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9), // Slate-100
+        color: Theme.of(context).extension<MotorAmbosTheme>()!.inputBg, // Slate-100
         borderRadius: BorderRadius.circular(16),
       ),
       child: TextField(
@@ -328,9 +330,9 @@ class _StyledTextField extends StatelessWidget {
         obscureText: obscureText,
         keyboardType: keyboardType,
         enabled: enabled,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF0F172A), // Dark Navy
+          color: Theme.of(context).colorScheme.onSurface, // Dark Navy
         ),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),

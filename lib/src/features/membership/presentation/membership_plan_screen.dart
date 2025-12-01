@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class MembershipPlansScreen extends StatelessWidget {
   const MembershipPlansScreen({super.key});
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+
     final plans = [
       {
         'tier': 'BASIC',
@@ -39,7 +40,7 @@ class MembershipPlansScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -50,29 +51,29 @@ class MembershipPlansScreen extends StatelessWidget {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: kDarkNavy),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
                       onPressed: () => context.pop(),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Choose a Plan',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -129,22 +130,22 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const kDarkNavy = Color(0xFF0F172A);
-    const kSlateText = Color(0xFF64748B);
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
 
     return Stack(
       children: [
         Container(
           margin: isRecommended ? const EdgeInsets.only(top: 12) : EdgeInsets.zero,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(24),
             border: isRecommended
                 ? Border.all(color: color, width: 2)
-                : Border.all(color: Colors.grey.withOpacity(0.15)),
+                : Border.all(color: motTheme.subtleBorder),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
@@ -166,7 +167,7 @@ class _PlanCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
+                            color: color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -191,24 +192,24 @@ class _PlanCard extends StatelessWidget {
                       children: [
                         Text(
                           price,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
-                            color: kDarkNavy,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         Text(
                           period,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: kSlateText,
+                            color: motTheme.slateText,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
-                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    Divider(height: 1, color: motTheme.inputBg),
                     const SizedBox(height: 24),
                     ...features.map((f) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -219,9 +220,9 @@ class _PlanCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               f,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF334155), // Slate-700
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -236,7 +237,7 @@ class _PlanCard extends StatelessWidget {
                       child: FilledButton(
                         onPressed: onTap,
                         style: FilledButton.styleFrom(
-                          backgroundColor: isRecommended ? color : kDarkNavy,
+                          backgroundColor: isRecommended ? color : motTheme.accent,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -268,7 +269,7 @@ class _PlanCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.4),
+                    color: color.withValues(alpha: 0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   )

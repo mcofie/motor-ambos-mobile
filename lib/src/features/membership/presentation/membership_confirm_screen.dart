@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:motor_ambos/src/core/services/membership_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class MembershipConfirmScreen extends StatefulWidget {
   final Map<String, dynamic> plan;
@@ -14,10 +15,7 @@ class MembershipConfirmScreen extends StatefulWidget {
 class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
   bool _loading = false;
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
 
   Future<void> _complete() async {
     setState(() => _loading = true);
@@ -41,15 +39,18 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
     final p = widget.plan;
     final tier = p['tier'] as String;
     final price = p['price'] as String;
     // Ensure color is handled safely if passed, or default to Navy
-    final Color accentColor = (p['color'] is Color) ? p['color'] : kDarkNavy;
+    final Color accentColor = (p['color'] is Color) ? p['color'] : motTheme.accent;
 
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -60,29 +61,29 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.cardColor,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: kDarkNavy),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
                       onPressed: () => context.pop(),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Confirm Plan',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: kDarkNavy,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -103,11 +104,11 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: theme.cardColor,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -118,7 +119,7 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.1),
+                              color: accentColor.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(Icons.verified_rounded, size: 40, color: accentColor),
@@ -136,30 +137,30 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                           const SizedBox(height: 8),
                           Text(
                             price,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: kDarkNavy,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'per year',
                             style: TextStyle(
                               fontSize: 14,
-                              color: kSlateText,
+                              color: motTheme.slateText,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 32),
                           const Divider(height: 1),
                           const SizedBox(height: 32),
-                          const Text(
+                          Text(
                             'You are about to upgrade your MotorAmbos membership. This plan will be active immediately after payment.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
-                              color: kSlateText,
+                              color: motTheme.slateText,
                               height: 1.5,
                             ),
                           ),
@@ -175,8 +176,8 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+                color: theme.cardColor,
+                border: Border(top: BorderSide(color: motTheme.subtleBorder)),
               ),
               child: SizedBox(
                 width: double.infinity,
@@ -184,7 +185,7 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _complete,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kDarkNavy,
+                    backgroundColor: motTheme.accent,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(

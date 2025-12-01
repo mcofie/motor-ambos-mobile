@@ -1,6 +1,9 @@
 import 'dart:ui';
+import 'package:flutter/services.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:toastification/toastification.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.child});
@@ -8,19 +11,19 @@ class AppShell extends StatelessWidget {
   final Widget child;
 
   static const _tabs = [
-    _TabItem('/app', Icons.home_rounded, Icons.home_outlined, 'Home'),
+    _TabItem('/app', CupertinoIcons.house_fill, CupertinoIcons.house, 'Home'),
     _TabItem(
       '/assist',
-      Icons.car_crash_rounded,
-      Icons.car_crash_outlined,
+      CupertinoIcons.exclamationmark_shield_fill,
+      CupertinoIcons.exclamationmark_shield,
       'Assist',
     ),
-    // _TabItem('/garage', Icons.directions_car_rounded, Icons.directions_car_outlined, 'Garage'),
-    // _TabItem('/membership', Icons.card_membership_rounded, Icons.card_membership_outlined, 'Member'),
+    _TabItem('/garage', CupertinoIcons.car_fill, CupertinoIcons.car_detailed, 'Garage'),
+    _TabItem('/membership', CupertinoIcons.creditcard_fill, CupertinoIcons.creditcard, 'Member'),
     _TabItem(
       '/more',
-      Icons.grid_view_rounded,
-      Icons.grid_view_outlined,
+      CupertinoIcons.square_grid_2x2_fill,
+      CupertinoIcons.square_grid_2x2,
       'More',
     ),
   ];
@@ -35,7 +38,8 @@ class AppShell extends StatelessWidget {
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _indexForLocation(location);
 
-    return Scaffold(
+    return ToastificationWrapper(
+      child: Scaffold(
       // Setting extendBody to false (default) ensures the body stops
       // right before the bottom navigation bar starts.
       extendBody: false,
@@ -46,11 +50,12 @@ class AppShell extends StatelessWidget {
         onTap: (index) {
           final tab = _tabs[index];
           if (tab.route != location) {
+            HapticFeedback.selectionClick();
             context.go(tab.route);
           }
         },
       ),
-    );
+    ));
   }
 }
 
@@ -89,21 +94,19 @@ class _FloatingNavBar extends StatelessWidget {
             height: 70,
             decoration: BoxDecoration(
               // Adaptive Glass Color
-              color: colorScheme.surface.withOpacity(isDark ? 0.75 : 0.85),
+              color: colorScheme.surface.withValues(alpha: isDark ? 0.75 : 0.85),
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
               ],
               // Subtle border for contrast
               border: Border.all(
-                color: isDark
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.white.withOpacity(0.5),
-                width: 1.5,
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                width: 1.0,
               ),
             ),
             child: Row(
@@ -140,7 +143,7 @@ class _FloatingNavBar extends StatelessWidget {
                                 ? (isDark
                                       ? colorScheme.onPrimary
                                       : colorScheme.surface)
-                                : colorScheme.onSurfaceVariant.withOpacity(0.7),
+                                : colorScheme.onSurface.withValues(alpha: 0.5),
                             size: 24,
                           ),
                         ),

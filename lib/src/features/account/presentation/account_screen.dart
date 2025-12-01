@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:motor_ambos/src/core/services/supabase_service.dart';
+import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
 
 class UserProfile {
   final String name;
@@ -54,10 +55,8 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _isSaving = false;
   UserProfile? _profile;
 
-  // Theme Colors
-  static const kBgColor = Color(0xFFF8FAFC);
-  static const kDarkNavy = Color(0xFF0F172A);
-  static const kSlateText = Color(0xFF64748B);
+
+
 
   @override
   void initState() {
@@ -186,37 +185,40 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading || _profile == null) {
-      return const Scaffold(
-        backgroundColor: kBgColor,
-        body: Center(child: CircularProgressIndicator(color: kDarkNavy)),
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.onSurface)),
       );
     }
 
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
     return Scaffold(
-      backgroundColor: kBgColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       // Custom Header
       appBar: AppBar(
-        backgroundColor: kBgColor,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: kDarkNavy),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
             onPressed: () => context.canPop() ? context.pop() : context.go('/more'),
           ),
         ),
         centerTitle: true,
-        title: const Text(
+        title: Text(
           'Edit Profile',
           style: TextStyle(
-            color: kDarkNavy,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
@@ -238,19 +240,19 @@ class _AccountScreenState extends State<AccountScreen> {
                           height: 100,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFFF1F5F9), // Light Slate
-                            border: Border.all(color: Colors.white, width: 4),
+                            color: motTheme.inputBg, // Light Slate
+                            border: Border.all(color: theme.cardColor, width: 4),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
                             ],
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             _profile!.name.isNotEmpty ? _profile!.name[0].toUpperCase() : 'U',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
-                              color: kDarkNavy,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -259,11 +261,11 @@ class _AccountScreenState extends State<AccountScreen> {
                           right: 0,
                           child: Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: const BoxDecoration(
-                              color: kDarkNavy,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.onSurface,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.edit_rounded, color: Colors.white, size: 14),
+                            child: Icon(Icons.edit_rounded, color: theme.colorScheme.surface, size: 14),
                           ),
                         ),
                       ],
@@ -309,8 +311,8 @@ class _AccountScreenState extends State<AccountScreen> {
           Container(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+              color: theme.cardColor,
+              border: Border(top: BorderSide(color: motTheme.subtleBorder)),
             ),
             child: SizedBox(
               width: double.infinity,
@@ -318,16 +320,16 @@ class _AccountScreenState extends State<AccountScreen> {
               child: ElevatedButton(
                 onPressed: (_hasChanges && !_isSaving) ? _saveChanges : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kDarkNavy,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[300],
+                  backgroundColor: theme.colorScheme.onSurface,
+                  foregroundColor: theme.colorScheme.surface,
+                  disabledBackgroundColor: theme.disabledColor,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: _isSaving
-                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    ? SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: theme.colorScheme.surface, strokeWidth: 2))
                     : const Text(
                   'Save Changes',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -355,10 +357,10 @@ class _InputLabel extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Color(0xFF94A3B8), // Slate-400
+          color: Theme.of(context).extension<MotorAmbosTheme>()!.slateText, // Slate-400
           letterSpacing: 0.5,
         ),
       ),
@@ -383,15 +385,15 @@ class _StyledTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9), // Slate-100
+        color: Theme.of(context).extension<MotorAmbosTheme>()!.inputBg, // Slate-100
         borderRadius: BorderRadius.circular(16),
       ),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: Color(0xFF0F172A), // Dark Navy
+          color: Theme.of(context).colorScheme.onSurface, // Dark Navy
         ),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
@@ -416,9 +418,9 @@ class _ReadOnlyField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Theme.of(context).extension<MotorAmbosTheme>()!.subtleBorder),
       ),
       child: Row(
         children: [
