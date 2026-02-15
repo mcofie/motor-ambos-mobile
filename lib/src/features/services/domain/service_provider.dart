@@ -4,7 +4,8 @@ enum ServiceCategory {
   detailer('Detailers', 'Deep cleaning & polishing'),
   carWash('Car Wash', 'Quick & premium washes'),
   roadworthy('Roadworthy', 'Certified inspection centers'),
-  insurance('Insurance', 'Coverage & renewals');
+  insurance('Insurance', 'Coverage & renewals'),
+  shop('Shop', 'Auto parts & accessories');
 
   final String label;
   final String description;

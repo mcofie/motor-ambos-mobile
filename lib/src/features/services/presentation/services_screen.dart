@@ -207,6 +207,7 @@ class _CategoriesGrid extends StatelessWidget {
         ServiceCategory.carWash => Icons.water_drop_rounded,
         ServiceCategory.roadworthy => Icons.verified_user_rounded,
         ServiceCategory.insurance => Icons.security_rounded,
+        ServiceCategory.shop => Icons.shopping_bag_rounded,
       };
     }
 
@@ -217,6 +218,7 @@ class _CategoriesGrid extends StatelessWidget {
         ServiceCategory.carWash => Colors.cyanAccent,
         ServiceCategory.roadworthy => Colors.orangeAccent,
         ServiceCategory.insurance => Colors.tealAccent,
+        ServiceCategory.shop => Colors.redAccent,
       };
     }
     

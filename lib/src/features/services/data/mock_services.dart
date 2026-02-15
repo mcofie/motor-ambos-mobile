@@ -115,4 +115,42 @@ List<ServiceProvider> mockServices = [
       ServiceItem(name: 'Comprehensive Quote', price: 0),
     ],
   ),
+  
+  // Shops
+  ServiceProvider(
+    id: 's1',
+    name: 'AutoParts Ghana',
+    category: ServiceCategory.shop,
+    address: 'Abossey Okai, Accra',
+    phone: '+233 24 555 9999',
+    imageUrl: 'assets/images/services/shop1.jpg',
+    rating: 4.6,
+    reviewCount: 420,
+    isVerified: true,
+    distance: '8.5 km',
+    about: 'Your one-stop shop for genuine Toyota, Honda, and Mercedes Benz spare parts. We stock everything from brake pads to engine blocks.',
+    services: [
+      ServiceItem(name: 'Toyota Pure Oil (5L)', price: 250),
+      ServiceItem(name: 'Oil Filter (Corolla)', price: 45),
+      ServiceItem(name: 'Spark Plugs (Set of 4)', price: 120),
+      ServiceItem(name: 'Brake Pads (Front)', price: 300),
+    ],
+  ),
+  ServiceProvider(
+    id: 's2',
+    name: 'Kojo Battery Center',
+    category: ServiceCategory.shop,
+    address: 'Circle, near Odo Rice',
+    phone: '+233 27 888 7777',
+    imageUrl: 'assets/images/services/shop2.jpg',
+    rating: 4.3,
+    reviewCount: 95,
+    distance: '2.1 km',
+    about: 'Specialists in heavy-duty car batteries. We sell and install Varta, Bosch, and localized brands. Free testing included.',
+    services: [
+      ServiceItem(name: 'Varta Battery 60Ah', price: 650),
+      ServiceItem(name: 'Bosch Battery 70Ah', price: 800),
+      ServiceItem(name: 'Battery Installation', price: 0, duration: '15 mins'),
+    ],
+  ),
 ];
