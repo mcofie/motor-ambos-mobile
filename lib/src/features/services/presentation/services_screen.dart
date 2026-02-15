@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
+import 'package:motor_ambos/src/features/services/domain/service_provider.dart';
 
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
@@ -197,6 +199,27 @@ class _CategoriesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Map categories to icons and colors
+    IconData getIcon(ServiceCategory cat) {
+      return switch (cat) {
+        ServiceCategory.mechanic => Icons.build_circle_rounded,
+        ServiceCategory.detailer => Icons.local_car_wash_rounded, // or auto_awesome
+        ServiceCategory.carWash => Icons.water_drop_rounded,
+        ServiceCategory.roadworthy => Icons.verified_user_rounded,
+        ServiceCategory.insurance => Icons.security_rounded,
+      };
+    }
+
+    Color getColor(ServiceCategory cat) {
+      return switch (cat) {
+        ServiceCategory.mechanic => Colors.blueAccent,
+        ServiceCategory.detailer => Colors.purpleAccent,
+        ServiceCategory.carWash => Colors.cyanAccent,
+        ServiceCategory.roadworthy => Colors.orangeAccent,
+        ServiceCategory.insurance => Colors.tealAccent,
+      };
+    }
+    
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -204,12 +227,15 @@ class _CategoriesGrid extends StatelessWidget {
       mainAxisSpacing: 16,
       crossAxisSpacing: 16,
       childAspectRatio: 1.5,
-      children: [
-        _CategoryTile(label: 'Insurance', icon: Icons.security_rounded, color: Colors.tealAccent, desc: 'Digital Renewal'),
-        _CategoryTile(label: 'Roadworthy', icon: Icons.assignment_rounded, color: Colors.orangeAccent, desc: 'Renew Fast'),
-        _CategoryTile(label: 'Repair', icon: Icons.build_rounded, color: Colors.blueAccent, desc: 'Certified Help'),
-        _CategoryTile(label: 'Concierge', icon: Icons.auto_awesome_rounded, color: Colors.purpleAccent, desc: 'Premium Care'),
-      ],
+      children: ServiceCategory.values.map((cat) {
+        return _CategoryTile(
+          label: cat.label,
+          desc: cat.description,
+          icon: getIcon(cat),
+          color: getColor(cat),
+          onTap: () => context.pushNamed('service-category', extra: cat),
+        );
+      }).toList(),
     );
   }
 }
@@ -218,36 +244,40 @@ class _CategoryTile extends StatelessWidget {
   final String label, desc;
   final IconData icon;
   final Color color;
+  final VoidCallback onTap;
 
-  const _CategoryTile({required this.label, required this.desc, required this.icon, required this.color});
+  const _CategoryTile({required this.label, required this.desc, required this.icon, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final motTheme = theme.extension<MotorAmbosTheme>()!;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: motTheme.subtleBorder),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Icon(icon, color: color, size: 24),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: -0.3)),
-              const SizedBox(height: 2),
-              Text(desc, style: TextStyle(color: motTheme.slateText, fontSize: 10, fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: motTheme.subtleBorder),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Icon(icon, color: color, size: 28),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: -0.3)),
+                const SizedBox(height: 2),
+                Text(desc, style: TextStyle(color: motTheme.slateText, fontSize: 10, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

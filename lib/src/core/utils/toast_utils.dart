@@ -1,32 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
-import 'package:motor_ambos/src/app/theme.dart';
 
 class ToastUtils {
+  static const _radius = BorderRadius.all(Radius.circular(16));
+  static const _padding = EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+  static const _margin = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+  static const _shadow = [
+    BoxShadow(color: Color(0x40000000), blurRadius: 24, offset: Offset(0, 12), spreadRadius: 0)
+  ];
+
   static void showSuccess(BuildContext context, {required String title, String? description}) {
     toastification.show(
       context: context,
       type: ToastificationType.success,
       style: ToastificationStyle.flat,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      description: description != null ? Text(description) : null,
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+      description: description != null 
+          ? Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)) 
+          : null,
       alignment: Alignment.topCenter,
       autoCloseDuration: const Duration(seconds: 4),
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x07000000),
-          blurRadius: 16,
-          offset: Offset(0, 16),
-          spreadRadius: 0,
-        )
-      ],
-      showProgressBar: false,
-      primaryColor: AppColors.forestGreen,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      borderRadius: _radius,
+      boxShadow: _shadow,
+      showProgressBar: true,
+      dragToClose: true,
+      primaryColor: const Color(0xFF22C55E), // Bright Green
+      backgroundColor: const Color(0xFF0F172A), // Slate 900
+      foregroundColor: Colors.white,
+      padding: _padding,
+      margin: _margin,
+      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+      icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 28),
     );
   }
 
@@ -35,17 +39,23 @@ class ToastUtils {
       context: context,
       type: ToastificationType.error,
       style: ToastificationStyle.flat,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      description: description != null ? Text(description) : null,
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+      description: description != null 
+          ? Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)) 
+          : null,
       alignment: Alignment.topCenter,
-      autoCloseDuration: const Duration(seconds: 4),
-      borderRadius: BorderRadius.circular(12),
-      showProgressBar: false,
-      primaryColor: AppColors.error,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      autoCloseDuration: const Duration(seconds: 5),
+      borderRadius: _radius,
+      boxShadow: _shadow,
+      showProgressBar: true,
+      dragToClose: true,
+      primaryColor: const Color(0xFFEF4444), // Bright Red
+      backgroundColor: const Color(0xFF0F172A), // Slate 900
+      foregroundColor: Colors.white,
+      padding: _padding,
+      margin: _margin,
+      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+      icon: const Icon(Icons.error_rounded, color: Color(0xFFEF4444), size: 28),
     );
   }
 
@@ -54,17 +64,23 @@ class ToastUtils {
       context: context,
       type: ToastificationType.info,
       style: ToastificationStyle.flat,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      description: description != null ? Text(description) : null,
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+      description: description != null 
+          ? Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)) 
+          : null,
       alignment: Alignment.topCenter,
       autoCloseDuration: const Duration(seconds: 4),
-      borderRadius: BorderRadius.circular(12),
-      showProgressBar: false,
-      primaryColor: AppColors.brandGreen, // Deep Green
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      borderRadius: _radius,
+      boxShadow: _shadow,
+      showProgressBar: true,
+      dragToClose: true,
+      primaryColor: const Color(0xFF3B82F6), // Bright Blue
+      backgroundColor: const Color(0xFF0F172A), // Slate 900
+      foregroundColor: Colors.white,
+      padding: _padding,
+      margin: _margin,
+      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+      icon: const Icon(Icons.info_rounded, color: Color(0xFF3B82F6), size: 28),
     );
   }
 }

@@ -23,6 +23,19 @@ final vehiclesProvider = FutureProvider<List<Vehicle>>((ref) async {
 /// Invalidate: `ref.invalidate(vehicleDetailProvider(id))`
 final vehicleDetailProvider = FutureProvider.family<Vehicle?, String>((ref, id) async {
   ref.keepAlive();
+
+  // Optimistic Cache: Check if we already have this vehicle in the loaded list
+  // Only use cache if the list is stable (not loading/refreshing) to avoid stale data during edits
+  final vehiclesState = ref.read(vehiclesProvider);
+  if (vehiclesState.hasValue && !vehiclesState.isLoading && !vehiclesState.isRefreshing) {
+    try {
+      final cached = vehiclesState.value!.firstWhere((v) => v.id == id);
+      return cached;
+    } catch (_) {
+      // Not found, proceed to fetch
+    }
+  }
+
   final service = ref.read(vehicleServiceProvider);
   return service.getVehicleById(id);
 });

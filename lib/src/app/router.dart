@@ -20,6 +20,9 @@ import 'package:motor_ambos/src/features/home/presentation/home_screen.dart';
 import 'package:motor_ambos/src/features/services/presentation/services_screen.dart';
 import 'package:motor_ambos/src/features/activity/presentation/activity_screen.dart';
 import 'package:motor_ambos/src/features/sos/presentation/sos_screen.dart';
+import 'package:motor_ambos/src/features/services/presentation/service_category_screen.dart';
+import 'package:motor_ambos/src/features/services/presentation/service_provider_detail_screen.dart';
+import 'package:motor_ambos/src/features/services/domain/service_provider.dart';
 
 // Profile / settings (was "More")
 import 'package:motor_ambos/src/features/more/presentation/more_screen.dart';
@@ -138,6 +141,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/services',
             name: 'services',
             builder: (_, __) => const ServicesScreen(),
+            routes: [
+              GoRoute(
+                path: 'category',
+                name: 'service-category',
+                builder: (_, state) {
+                  final category = state.extra as ServiceCategory;
+                  return ServiceCategoryScreen(category: category);
+                },
+              ),
+              GoRoute(
+                path: 'provider',
+                name: 'service-provider-detail',
+                builder: (_, state) {
+                  final provider = state.extra as ServiceProvider;
+                  return ServiceProviderDetailScreen(provider: provider);
+                },
+              ),
+            ],
           ),
 
           // ── Tab 3: Activity (Vehicle History) ──────────────────────
