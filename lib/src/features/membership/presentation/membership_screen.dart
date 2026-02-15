@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
-import 'package:motor_ambos/src/core/widget/skeleton.dart';
 
-// MOCKING DOMAIN & PROVIDER
 class Membership {
   final String id;
   final String tier;
@@ -17,38 +15,22 @@ class Membership {
   final bool prioritySupport;
 
   Membership({
-    required this.id,
-    required this.tier,
-    required this.memberSince,
-    required this.expiry,
-    required this.includedCallsPerYear,
-    required this.callsUsedThisYear,
-    required this.estimatedSavings,
-    required this.freeTowRadiusKm,
-    required this.prioritySupport,
+    required this.id, required this.tier, required this.memberSince, required this.expiry,
+    required this.includedCallsPerYear, required this.callsUsedThisYear,
+    required this.estimatedSavings, required this.freeTowRadiusKm, required this.prioritySupport,
   });
 }
 
 final membershipProvider = FutureProvider<Membership>((ref) async {
-  // Simulate network delay
-  await Future.delayed(const Duration(seconds: 2));
+  await Future.delayed(const Duration(seconds: 1));
   return Membership(
-    id: 'MBR-8821-X99',
-    tier: 'Premium',
-    memberSince: DateTime(2023, 1, 15),
-    expiry: DateTime.now().add(const Duration(days: 120)),
-    includedCallsPerYear: 5,
-    callsUsedThisYear: 2,
-    estimatedSavings: 1450.00,
-    freeTowRadiusKm: 50,
-    prioritySupport: true,
+    id: 'MBR-8821-X99', tier: 'Premium', memberSince: DateTime(2023, 1, 15), expiry: DateTime.now().add(const Duration(days: 120)),
+    includedCallsPerYear: 5, callsUsedThisYear: 2, estimatedSavings: 1450.00, freeTowRadiusKm: 50, prioritySupport: true,
   );
 });
 
 class MembershipScreen extends ConsumerWidget {
   const MembershipScreen({super.key});
-
-
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,262 +40,130 @@ class MembershipScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 1. Custom Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.cardColor,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
-                      onPressed: () => context.canPop() ? context.pop() : context.go('/more'),
-                    ),
+      appBar: AppBar(
+        title: const Text('My Membership', style: TextStyle(fontWeight: FontWeight.w900)),
+        centerTitle: true,
+        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: theme.colorScheme.onSurface), onPressed: () => context.pop()),
+        backgroundColor: Colors.transparent,
+      ),
+      body: membershipAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+        data: (membership) {
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      _PremiumMembershipCard(membership: membership),
+                      const SizedBox(height: 32),
+                      _sectionTitle('USAGE STATUS'),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _UsageTile(membership: membership)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _SavingsTile(membership: membership)),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      _sectionTitle('PLAN BENEFITS'),
+                      const SizedBox(height: 16),
+                      _BenefitRow(icon: Icons.local_shipping_rounded, color: Colors.blue, title: "Free Towing", subtitle: "${membership.freeTowRadiusKm}km radius coverage"),
+                      const SizedBox(height: 12),
+                      _BenefitRow(icon: Icons.bolt_rounded, color: Colors.orange, title: "Priority Response", subtitle: "Active VIP queueing"),
+                      const SizedBox(height: 12),
+                      const _BenefitRow(icon: Icons.build_circle_rounded, color: Colors.purple, title: "Labor Discount", subtitle: "15% off at partner garages"),
+                      const SizedBox(height: 40),
+                    ],
                   ),
-                  Expanded(
-                    child: Text(
-                      'My Membership',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 40), // Balance
-                ],
-              ),
-            ),
-
-            // 2. Scrollable Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 8),
-                    membershipAsync.when(
-                      loading: () => const SkeletonCard(height: 200),
-                      error: (err, stack) => Center(child: Text('Error: $err')),
-                      data: (membership) {
-                        return Column(
-                          children: [
-                            // The Premium Card
-                            _PremiumMembershipCard(membership: membership),
-
-                            const SizedBox(height: 24),
-
-                            // Usage Dashboard
-                            Row(
-                              children: [
-                                Expanded(child: _UsageCircle(membership: membership)),
-                                const SizedBox(width: 16),
-                                Expanded(child: _SavingsCard(membership: membership)),
-                              ],
-                            ),
-
-                            const SizedBox(height: 32),
-
-                            // Benefits List
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'PLAN PERKS',
-                                style: TextStyle(
-                                  color: motTheme.slateText,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 1.0,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _BenefitsList(membership: membership),
-                          ],
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Action Buttons
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement renewal flow
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: motTheme.accent,
-                          foregroundColor: theme.colorScheme.surface,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          "Renew Membership",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () {},
-                      child: Text(
-                        "View Billing History",
-                        style: TextStyle(
-                          color: motTheme.slateText,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
                 ),
               ),
+              _buildRenewButton(theme, motTheme),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text) {
+    return Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 1.2));
+  }
+
+  Widget _buildRenewButton(ThemeData theme, MotorAmbosTheme motTheme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        border: Border(top: BorderSide(color: motTheme.subtleBorder)),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(colors: [Color(0xFF0F172A), Color(0xFF1E293B)]),
+          ),
+          child: ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-          ],
+            child: const Text('RENEW MEMBERSHIP', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+          ),
         ),
       ),
     );
   }
 }
 
-//
-// 1. PREMIUM CARD WIDGET
-//
-//
-// 1. PREMIUM CARD WIDGET
-//
 class _PremiumMembershipCard extends StatelessWidget {
   final Membership membership;
-
   const _PremiumMembershipCard({required this.membership});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final motTheme = theme.extension<MotorAmbosTheme>()!;
-
     return Container(
-      height: 200,
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: motTheme.accent, // Fallback if gradient fails, but gradient covers it
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: motTheme.accent.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            motTheme.accent.withValues(alpha: 0.8),
-            motTheme.accent,
-          ], 
-        ),
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.45), blurRadius: 25, offset: const Offset(0, 15))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Top Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.shield_outlined, color: theme.colorScheme.onPrimary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    "MotorAmbos",
-                    style: TextStyle(
-                      color: theme.colorScheme.onPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
+              const Text('MOTORAMBOS CLUB', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  membership.tier.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onPrimary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.45), borderRadius: BorderRadius.circular(12)),
+                child: const Text('PREMIUM', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
               ),
             ],
           ),
-
-          // ID
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "MEMBERSHIP ID",
-                style: TextStyle(
-                  color: theme.colorScheme.onPrimary.withValues(alpha: 0.5),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                membership.id,
-                style: TextStyle(
-                  color: theme.colorScheme.onPrimary,
-                  fontFamily: 'Courier',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                ),
-              ),
-            ],
-          ),
-
-          // Footer
+          const SizedBox(height: 32),
+          Text(membership.id, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700, fontFamily: 'monospace', letterSpacing: 2)),
+          const SizedBox(height: 40),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _CardFooterItem(
-                label: "SINCE",
-                value: "${membership.memberSince.year}",
-              ),
-              _CardFooterItem(
-                label: "EXPIRES",
-                value: "${membership.expiry.month.toString().padLeft(2, '0')}/${membership.expiry.year.toString().substring(2)}",
-              ),
+              _CardInfo(label: 'MEMBER SINCE', value: '${membership.memberSince.year}'),
+              _CardInfo(label: 'VALID UNTIL', value: '12/26'),
+              const Icon(Icons.nfc_rounded, color: Colors.white24, size: 24),
             ],
           ),
         ],
@@ -322,198 +172,65 @@ class _PremiumMembershipCard extends StatelessWidget {
   }
 }
 
-class _CardFooterItem extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _CardFooterItem({required this.label, required this.value});
-
+class _CardInfo extends StatelessWidget {
+  final String label, value;
+  const _CardInfo({required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5), fontSize: 9, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900)),
       ],
     );
   }
 }
 
-//
-// 2. DASHBOARD WIDGETS
-//
-class _UsageCircle extends StatelessWidget {
+class _UsageTile extends StatelessWidget {
   final Membership membership;
-
-  const _UsageCircle({required this.membership});
+  const _UsageTile({required this.membership});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final motTheme = theme.extension<MotorAmbosTheme>()!;
-
-    final remaining = membership.includedCallsPerYear - membership.callsUsedThisYear;
-    final percent = remaining / membership.includedCallsPerYear;
-
+    final left = membership.includedCallsPerYear - membership.callsUsedThisYear;
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: motTheme.subtleBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 70,
-            width: 70,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CircularProgressIndicator(
-                  value: percent,
-                  strokeWidth: 6,
-                  backgroundColor: motTheme.inputBg,
-                  color: motTheme.accent,
-                  strokeCap: StrokeCap.round,
-                ),
-                Center(
-                  child: Text(
-                    "$remaining",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Calls Left",
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
-          ),
-          Text(
-            "of ${membership.includedCallsPerYear} included",
-            style: TextStyle(fontSize: 10, color: motTheme.slateText),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SavingsCard extends StatelessWidget {
-  final Membership membership;
-
-  const _SavingsCard({required this.membership});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final motTheme = theme.extension<MotorAmbosTheme>()!;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      height: 154,
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: motTheme.subtleBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: motTheme.subtleBorder)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: motTheme.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.savings_rounded, color: motTheme.success, size: 20),
-          ),
-          const Spacer(),
-          Text(
-            "Total Saved",
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: motTheme.slateText),
-          ),
+          Text('$left', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
           const SizedBox(height: 4),
-          Text(
-            "GHS ${membership.estimatedSavings.toInt()}",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
+          const Text('Calls Left', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.grey)),
         ],
       ),
     );
   }
 }
 
-//
-// 3. BENEFITS LIST
-//
-class _BenefitsList extends StatelessWidget {
+class _SavingsTile extends StatelessWidget {
   final Membership membership;
-
-  const _BenefitsList({required this.membership});
+  const _SavingsTile({required this.membership});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _BenefitRow(
-          icon: Icons.local_shipping_rounded,
-          color: Colors.blue,
-          title: "Free Towing",
-          subtitle: "${membership.freeTowRadiusKm}km radius coverage",
-        ),
-        const SizedBox(height: 16),
-        _BenefitRow(
-          icon: Icons.bolt_rounded,
-          color: Colors.orange,
-          title: "Priority Response",
-          subtitle: membership.prioritySupport ? "Active VIP queueing" : "Standard",
-        ),
-        const SizedBox(height: 16),
-        const _BenefitRow(
-          icon: Icons.build_circle_rounded,
-          color: Colors.purple,
-          title: "Labor Discount",
-          subtitle: "15% off at partner garages",
-        ),
-      ],
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(18), border: Border.all(color: motTheme.subtleBorder)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('GHS ${membership.estimatedSavings.toInt()}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.green)),
+          const SizedBox(height: 8),
+          const Text('Total Saved', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.grey)),
+        ],
+      ),
     );
   }
 }
@@ -521,70 +238,22 @@ class _BenefitsList extends StatelessWidget {
 class _BenefitRow extends StatelessWidget {
   final IconData icon;
   final Color color;
-  final String title;
-  final String subtitle;
-
-  const _BenefitRow({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-  });
+  final String title, subtitle;
+  const _BenefitRow({required this.icon, required this.color, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final motTheme = theme.extension<MotorAmbosTheme>()!;
-
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: motTheme.subtleBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: motTheme.subtleBorder)),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
+          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle), child: Icon(icon, color: color, size: 20)),
           const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: motTheme.slateText,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(Icons.check_circle_rounded, color: motTheme.success, size: 18),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)), const SizedBox(height: 2), Text(subtitle, style: TextStyle(color: motTheme.slateText, fontSize: 12))])),
+          const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 20),
         ],
       ),
     );

@@ -1,0 +1,9 @@
+Analyzing Motor_Ambos...                                        
+
+  error • Invalid constant value • lib/src/app/theme.dart:70:27 • invalid_constant
+  error • The getter 'borderLight' isn't defined for the type 'AppColors' • lib/src/app/theme.dart:70:37 • undefined_getter
+  error • Invalid constant value • lib/src/app/theme.dart:101:27 • invalid_constant
+  error • The getter 'cardDark' isn't defined for the type 'AppColors' • lib/src/app/theme.dart:101:37 • undefined_getter
+warning • The value of the local variable 'cardBg' isn't used • lib/src/features/garage/presentation/garage_screen.dart:144:11 • unused_local_variable
+  error • Invalid constant value • lib/src/features/garage/presentation/garage_screen.dart:182:49 • invalid_constant
+

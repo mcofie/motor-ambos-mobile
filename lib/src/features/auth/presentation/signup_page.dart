@@ -90,10 +90,10 @@ class _SignupPageState extends State<SignupPage> {
                       height: 64,
                       decoration: BoxDecoration(
                         color: theme.colorScheme.onSurface,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                             blurRadius: 15,
                             offset: const Offset(0, 8),
                           ),
@@ -137,7 +137,7 @@ class _SignupPageState extends State<SignupPage> {
                       decoration: BoxDecoration(
                         color: theme.colorScheme.errorContainer, // Light Red
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.1)),
+                        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.15)),
                       ),
                       child: Row(
                         children: [
@@ -221,7 +221,7 @@ class _SignupPageState extends State<SignupPage> {
                         foregroundColor: theme.colorScheme.surface,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: _loading
@@ -323,7 +323,7 @@ class _StyledTextField extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).extension<MotorAmbosTheme>()!.inputBg, // Slate-100
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
         controller: controller,

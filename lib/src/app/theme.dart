@@ -5,18 +5,23 @@ import 'motorambos_theme_extension.dart';
 // Your Brand Colors
 class AppColors {
   static const Color forestGreen = Color(0xFF163300);
-  static const Color brightLime = Color(0xFF9FE870);
+  static const Color brandGreen = Color(0xFF15803D); // Primary Brand Color
   static const Color white = Color(0xFFFFFFFF);
   
-  static const Color cardDark = Color(0xFF1A3B00);
-  
-  static const Color borderLight = Color(0xFFE2E8E0);
-  static const Color borderDark = Color(0xFF2E5C0A);
-  
-  static const Color mutedLight = Color(0xFFF2F9ED);
-  static const Color mutedDark = Color(0xFF224505);
+  // Modern Slate Palette (Light -> Dark)
+  static const Color slate50 = Color(0xFFF8FAFC);
+  static const Color slate100 = Color(0xFFF1F5F9);
+  static const Color slate200 = Color(0xFFE2E8F0);
+  static const Color slate300 = Color(0xFFCBD5E1);
+  static const Color slate400 = Color(0xFF94A3B8); // Muted Text
+  static const Color slate500 = Color(0xFF64748B);
+  static const Color slate600 = Color(0xFF475569);
+  static const Color slate700 = Color(0xFF334155);
+  static const Color slate800 = Color(0xFF1E293B); // Dark Cards
+  static const Color slate900 = Color(0xFF0F172A);
+  static const Color slate950 = Color(0xFF020617); // Dark Background
 
-  static const Color error = Color(0xFFDC2626); // Standard Red
+  static const Color error = Color(0xFFEF4444); // Modern Red
 }
 
 class AppTheme {
@@ -48,31 +53,32 @@ class AppTheme {
   }
 
   // 2. Component Shapes
-  static final _roundedShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(16));
-  static final _buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
+  // 2. Component Shapes
+  static final _roundedShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)); // Modern 16px radius
+  static final _buttonShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
 
   // --- LIGHT THEME ---
   static ThemeData get light {
     const colorScheme = ColorScheme.light(
-      primary: AppColors.forestGreen,
+      primary: AppColors.brandGreen,
       onPrimary: AppColors.white,
-      primaryContainer: AppColors.mutedLight,
-      onPrimaryContainer: AppColors.forestGreen,
+      primaryContainer: AppColors.slate100, // Subtle green/slate mix could be better, but sticking to slate for clean look
+      onPrimaryContainer: AppColors.brandGreen,
 
-      secondary: AppColors.brightLime,
-      onSecondary: AppColors.forestGreen,
-      secondaryContainer: AppColors.borderLight,
+      secondary: AppColors.forestGreen,
+      onSecondary: AppColors.white,
+      secondaryContainer: AppColors.slate200,
       onSecondaryContainer: AppColors.forestGreen,
 
       surface: AppColors.white,
-      onSurface: AppColors.forestGreen,
-      surfaceContainer: AppColors.white, // Cards are white in light mode
+      onSurface: AppColors.slate900,
+      surfaceContainer: AppColors.white,
 
       error: AppColors.error,
       onError: Colors.white,
 
-      outline: AppColors.borderLight,
-      outlineVariant: AppColors.borderLight,
+      outline: AppColors.slate200,
+      outlineVariant: AppColors.slate300,
     );
 
     return _buildTheme(
@@ -85,25 +91,25 @@ class AppTheme {
   // --- DARK THEME ---
   static ThemeData get dark {
     const colorScheme = ColorScheme.dark(
-      primary: AppColors.brightLime,
-      onPrimary: AppColors.forestGreen,
-      primaryContainer: AppColors.mutedDark,
-      onPrimaryContainer: AppColors.brightLime,
+      primary: AppColors.brandGreen,
+      onPrimary: AppColors.white,
+      primaryContainer: AppColors.slate800,
+      onPrimaryContainer: AppColors.brandGreen,
 
       secondary: AppColors.white,
       onSecondary: AppColors.forestGreen,
-      secondaryContainer: AppColors.cardDark,
+      secondaryContainer: AppColors.slate800,
       onSecondaryContainer: AppColors.white,
 
-      surface: AppColors.forestGreen,
-      onSurface: AppColors.white,
-      surfaceContainer: AppColors.cardDark,
+      surface: AppColors.slate950,
+      onSurface: AppColors.slate50,
+      surfaceContainer: AppColors.slate900,
 
       error: AppColors.error,
       onError: Colors.white,
 
-      outline: AppColors.borderDark,
-      outlineVariant: AppColors.borderDark,
+      outline: AppColors.slate700,
+      outlineVariant: AppColors.slate600,
     );
 
     return _buildTheme(
@@ -123,7 +129,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
+      scaffoldBackgroundColor: brightness == Brightness.light ? AppColors.slate50 : AppColors.slate950,
     );
 
     return base.copyWith(
@@ -153,7 +159,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           shape: _buttonShape,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          side: BorderSide(color: colorScheme.outline),
+          side: BorderSide(color: colorScheme.outlineVariant),
           foregroundColor: colorScheme.onSurface,
         ),
       ),
@@ -168,7 +174,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: colorScheme.surfaceContainer,
         elevation: 0,
-        shape: _roundedShape,
+        shape: _roundedShape.copyWith(side: BorderSide(color: colorScheme.outline, width: 1)),
         margin: EdgeInsets.zero,
       ),
       bottomSheetTheme: BottomSheetThemeData(
@@ -184,34 +190,34 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: brightness == Brightness.light
-            ? AppColors.borderLight
-            : AppColors.borderDark,
+            ? AppColors.white
+            : AppColors.slate900,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
-        labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7)),
-        hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.5)),
+        labelStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.85)),
+        hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.65)),
       ),
 
       // Misc
-      iconTheme: IconThemeData(color: colorScheme.onSurface),
+      iconTheme: IconThemeData(color: colorScheme.onSurface, opacity: 0.9),
       dividerTheme: DividerThemeData(
-        color: colorScheme.outline.withValues(alpha: 0.5),
-        thickness: 1,
+        color: colorScheme.outline,
+        thickness: 1.2,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

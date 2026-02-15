@@ -96,7 +96,9 @@ class SkeletonList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.zero,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: itemCount,
       separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (_, __) => SkeletonCard(height: itemHeight),

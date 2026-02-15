@@ -1,0 +1,30 @@
+Analyzing Motor_Ambos...                                        
+
+  error • The method 'animate' isn't defined for the type 'Center' • lib/src/features/assist/presentation/assist_screen.dart:400:9 • undefined_method
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/assist/presentation/assist_screen.dart:420:67 • deprecated_member_use
+  error • The method 'animate' isn't defined for the type 'SingleChildScrollView' • lib/src/features/assist/presentation/assist_screen.dart:430:9 • undefined_method
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/assist/presentation/assist_screen.dart:556:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/assist/presentation/assist_screen.dart:567:69 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/assist/presentation/assist_screen.dart:588:94 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/assist/presentation/assist_screen.dart:599:106 • deprecated_member_use
+  error • The method 'animate' isn't defined for the type 'Container' • lib/src/features/assist/presentation/assist_screen.dart:606:17 • undefined_method
+  error • The getter 'seconds' isn't defined for the type 'int' • lib/src/features/assist/presentation/assist_screen.dart:606:72 • undefined_getter
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/assist/presentation/assist_screen.dart:634:73 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:58:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:61:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:67:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:105:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:118:45 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/services/presentation/services_screen.dart:102:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/services/presentation/services_screen.dart:117:65 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/services/presentation/services_screen.dart:147:56 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/services/presentation/services_screen.dart:243:52 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/sos/presentation/sos_screen.dart:49:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/sos/presentation/sos_screen.dart:137:71 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/sos/presentation/sos_screen.dart:218:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/sos/presentation/sos_screen.dart:229:69 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/sos/presentation/sos_screen.dart:250:94 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/sos/presentation/sos_screen.dart:261:106 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/sos/presentation/sos_screen.dart:296:73 • deprecated_member_use
+
+26 issues found. (ran in 2.3s)

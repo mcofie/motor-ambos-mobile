@@ -260,7 +260,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
             color: theme.cardColor,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8),
             ],
           ),
           child: IconButton(
@@ -279,7 +279,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
             color: theme.cardColor,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10),
             ],
           ),
           child: Column(
@@ -414,10 +414,10 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: motTheme.success.withValues(alpha: 0.1),
+                        color: motTheme.success.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: motTheme.success.withValues(alpha: 0.2),
+                          color: motTheme.success.withValues(alpha: 0.45),
                         ),
                       ),
                       child: Row(
@@ -510,7 +510,7 @@ class _RequestAssistScreenState extends ConsumerState<RequestAssistScreen>
                         backgroundColor: motTheme.accent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                       ),

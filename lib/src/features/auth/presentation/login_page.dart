@@ -100,7 +100,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -144,7 +144,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       decoration: BoxDecoration(
                         color: theme.colorScheme.errorContainer, // Light Red
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.1)),
+                        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.15)),
                       ),
                       child: Row(
                         children: [
@@ -210,7 +210,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         foregroundColor: theme.colorScheme.surface,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: _loading
@@ -227,7 +227,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   // 5. Social Login
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.2))),
+                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.45))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -239,7 +239,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.2))),
+                      Expanded(child: Divider(color: Colors.grey.withValues(alpha: 0.45))),
                     ],
                   ),
 
@@ -251,9 +251,9 @@ class _SignInScreenState extends State<SignInScreen> {
                       onPressed: _loading ? null : _onGoogleLogin,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: theme.colorScheme.onSurface,
-                        side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+                        side: BorderSide(color: Colors.grey.withValues(alpha: 0.45)),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         backgroundColor: theme.cardColor,
                       ),
@@ -264,6 +264,28 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       label: const Text(
                         'Continue with Google',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  SizedBox(
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: _loading ? null : () => context.go('/phone-login'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.onSurface,
+                        side: BorderSide(color: Colors.grey.withValues(alpha: 0.45)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: theme.cardColor,
+                      ),
+                      icon: const Icon(Icons.sms_rounded, size: 22),
+                      label: const Text(
+                        'Sign in with Phone',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -345,7 +367,7 @@ class _StyledTextField extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).extension<MotorAmbosTheme>()!.inputBg, // Slate-100
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
         controller: controller,

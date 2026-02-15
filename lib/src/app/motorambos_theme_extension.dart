@@ -26,27 +26,27 @@ class MotorAmbosTheme extends ThemeExtension<MotorAmbosTheme> {
 
   factory MotorAmbosTheme.light() {
     return const MotorAmbosTheme(
-      accent: Color(0xFF163300), // Forest Green (Primary)
-      success: Color(0xFF22C55E),
+      accent: Color(0xFF15803D), // brandGreen
+      success: Color(0xFF16A34A),
       warning: Color(0xFFF59E0B),
       info: Color(0xFF3B82F6),
-      softCardBackground: Color(0xFFF2F9ED), // Muted Light
-      slateText: Color(0xFF5D7052), // Muted Foreground Light
-      inputBg: Color(0xFFE2E8E0), // Border/Input Light
-      subtleBorder: Color(0xFFE2E8E0), // Border Light
+      softCardBackground: Color(0xFFF1F5F9), // slate100
+      slateText: Color(0xFF475569), // slate600 - Good contrast for muted text
+      inputBg: Color(0xFFF8FAFC), // slate50 - Very clean input bg
+      subtleBorder: Color(0xFFE2E8F0), // slate200
     );
   }
 
   factory MotorAmbosTheme.dark(ColorScheme scheme) {
     return const MotorAmbosTheme(
-      accent: Color(0xFF9FE870), // Bright Lime (Primary)
+      accent: Color(0xFF22C55E), // Slightly brighter for dark mode visibility but still robust green
       success: Color(0xFF4ADE80),
       warning: Color(0xFFFBBF24),
       info: Color(0xFF60A5FA),
-      softCardBackground: Color(0xFF224505), // Muted Dark
-      slateText: Color(0xFFA3C299), // Muted Foreground Dark
-      inputBg: Color(0xFF2E5C0A), // Border/Input Dark
-      subtleBorder: Color(0xFF2E5C0A), // Border Dark
+      softCardBackground: Color(0xFF1E293B), // slate800
+      slateText: Color(0xFFCBD5E1), // slate300
+      inputBg: Color(0xFF0F172A), // slate900
+      subtleBorder: Color(0xFF334155), // slate700
     );
   }
 

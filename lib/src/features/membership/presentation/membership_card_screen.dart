@@ -63,7 +63,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -115,7 +115,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: motTheme.accent.withValues(alpha: 0.05),
+                color: motTheme.accent.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.card_membership_rounded, size: 48, color: motTheme.accent),
@@ -141,7 +141,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                   backgroundColor: motTheme.accent,
                   foregroundColor: theme.colorScheme.surface,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
                   'View Membership Plans',
@@ -190,7 +190,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: motTheme.accent,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
                   color: motTheme.accent.withValues(alpha: 0.4),
@@ -263,7 +263,7 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
                     Text(
                       'Expires $expiryText',
                       style: TextStyle(
-                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
                         fontSize: 12,
                       ),
                     ),
@@ -280,11 +280,11 @@ class _MembershipCardScreenState extends State<MembershipCardScreen> {
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: motTheme.subtleBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),

@@ -65,7 +65,7 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -105,10 +105,10 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                       padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
                         color: theme.cardColor,
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: Colors.black.withValues(alpha: 0.12),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -119,7 +119,7 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.1),
+                              color: accentColor.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(Icons.verified_rounded, size: 40, color: accentColor),
@@ -189,7 +189,7 @@ class _MembershipConfirmScreenState extends State<MembershipConfirmScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _loading

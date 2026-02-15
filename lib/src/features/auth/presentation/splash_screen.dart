@@ -36,17 +36,17 @@ class _SplashScreenState extends State<SplashScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.brightLime.withValues(alpha: 0.5),
+                  color: AppColors.brandGreen.withValues(alpha: 0.9),
                   width: 2,
                 ),
               ),
               child: const Icon(
                 CupertinoIcons.car_detailed,
                 size: 64,
-                color: AppColors.brightLime,
+                color: AppColors.brandGreen,
               ),
             ).animate()
                 .scale(duration: 600.ms, curve: Curves.easeOutBack)
@@ -74,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen> {
               'Premium Roadside Assistance',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: Colors.white.withValues(alpha: 0.9),
                 letterSpacing: 0.5,
               ),
             ).animate()
@@ -89,7 +89,7 @@ class _SplashScreenState extends State<SplashScreen> {
               height: 24,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.brightLime),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.brandGreen),
               ),
             ).animate()
                 .fadeIn(duration: 600.ms, delay: 1000.ms),

@@ -60,7 +60,7 @@ class ToastUtils {
       autoCloseDuration: const Duration(seconds: 4),
       borderRadius: BorderRadius.circular(12),
       showProgressBar: false,
-      primaryColor: AppColors.brightLime, // Neon/Lime
+      primaryColor: AppColors.brandGreen, // Deep Green
       backgroundColor: Colors.white,
       foregroundColor: Colors.black,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),

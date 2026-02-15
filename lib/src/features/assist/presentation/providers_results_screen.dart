@@ -48,7 +48,7 @@ class ProvidersResultsScreen extends StatelessWidget {
             color: theme.cardColor,
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8),
             ],
           ),
           child: IconButton(
@@ -163,9 +163,9 @@ class ProvidersResultsScreen extends StatelessWidget {
             backgroundColor: theme.cardColor,
             foregroundColor: theme.colorScheme.onSurface,
             elevation: 4,
-            shadowColor: Colors.black.withValues(alpha: 0.2),
+            shadowColor: Colors.black.withValues(alpha: 0.45),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               side: BorderSide(color: motTheme.subtleBorder),
             ),
           ),
@@ -328,7 +328,7 @@ class _ProviderCardState extends State<_ProviderCard> {
         border: Border.all(color: motTheme.subtleBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

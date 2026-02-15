@@ -1,277 +1,90 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:motor_ambos/src/core/services/membership_service.dart';
-import 'package:motor_ambos/src/core/services/supabase_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:motor_ambos/src/core/models/vehicle.dart';
+import 'package:motor_ambos/src/core/providers/vehicle_providers.dart';
+import 'package:motor_ambos/src/core/providers/profile_provider.dart';
 import 'package:motor_ambos/src/app/motorambos_theme_extension.dart';
+import 'package:motor_ambos/src/features/garage/presentation/widgets/ghana_number_plate.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String _firstName = 'Driver';
-  Map<String, dynamic>? _membership;
-  bool _loadingMembership = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserName();
-    _loadMembership();
-  }
-
-  // --- LOGIC SECTION ---
-
-  Future<void> _loadUserName() async {
-    final client = SupabaseService.client;
-    final user = client.auth.currentUser;
-    if (user == null) {
-      if (mounted) setState(() => _firstName = 'Driver');
-      return;
-    }
-
-    final email = user.email ?? '';
-    final metadataName = user.userMetadata?['full_name'] as String?;
-    String fallbackName =
-        metadataName ?? (email.isNotEmpty ? email.split('@').first : 'Driver');
-
-    try {
-      final dynamic res = await client
-          .schema('motorambos')
-          .from('profiles')
-          .select('full_name')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-      String displayName = fallbackName;
-      if (res != null) {
-        final row = Map<String, dynamic>.from(res as Map);
-        final fullName = row['full_name'] as String?;
-        if (fullName != null && fullName.trim().isNotEmpty) {
-          displayName = fullName;
-        }
-      }
-
-      // Extract First Name
-      final parts = displayName.trim().split(RegExp(r'\s+'));
-      if (mounted) {
-        setState(
-          () => _firstName = parts.isNotEmpty ? parts.first : displayName,
-        );
-      }
-    } catch (_) {
-      final parts = fallbackName.trim().split(RegExp(r'\s+'));
-      if (mounted) {
-        setState(
-          () => _firstName = parts.isNotEmpty ? parts.first : fallbackName,
-        );
-      }
-    }
-  }
-
-  Future<void> _loadMembership() async {
-    try {
-      final service = MembershipService();
-      final res = await service.getMembership();
-      if (mounted) {
-        setState(() {
-          _membership = res;
-          _loadingMembership = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _membership = null;
-          _loadingMembership = false;
-        });
-      }
-    }
-  }
-
-  // --- UI BUILD SECTION ---
-
-  @override
-  Widget build(BuildContext context) {
-    // 1. Data Parsing
-    final hasMembership =
-        !_loadingMembership &&
-        _membership != null &&
-        (_membership!['is_active'] != false);
-
-    String cardTier = 'PREMIUM';
-    String membershipId = '— — — —';
-    DateTime expiryDate = DateTime.now().add(const Duration(days: 365));
-    int callsUsed = 0;
-    double savings = 0.0;
-
-    if (hasMembership) {
-      final m = _membership!;
-      cardTier = (m['tier'] as String?)?.toUpperCase() ?? 'PREMIUM';
-      membershipId = (m['membership_id'] as String?) ?? '— — — —';
-      final rawExpiry = m['expiry_date'];
-      if (rawExpiry is String) {
-        expiryDate = DateTime.tryParse(rawExpiry) ?? expiryDate;
-      } else if (rawExpiry is DateTime) {
-        expiryDate = rawExpiry;
-      }
-      callsUsed = (m['calls_used'] as int?) ?? 0;
-      if (m['savings'] is num) {
-        savings = (m['savings'] as num).toDouble();
-      } else if (m['savings'] != null) {
-        savings = double.tryParse(m['savings'].toString()) ?? 0.0;
-      }
-    }
-
-    // 2. Theme Colors
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-
+    final userProfileAsync = ref.watch(userProfileProvider);
+    final primaryVehicleAsync = ref.watch(primaryVehicleProvider);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // HEADER (Enhanced)
-              _HeaderSection(
-                userName: _firstName,
-                onProfileTap: () => context.go('/more'), // Navigate to profile
-              ),
-
-              const SizedBox(height: 24),
-
-              // MEMBERSHIP CARD
-              Stack(
-                children: [
-                  _MembershipCard(
-                    tier: cardTier,
-                    membershipId: membershipId,
-                    expiryDate: expiryDate,
-                    callsUsedThisYear: callsUsed,
-                    estimatedSavings: savings,
-                  ).animate().fade(duration: 600.ms).slideY(begin: 0.1, end: 0),
-
-                  // Loading Overlay
-                  if (_loadingMembership)
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Container(
-                          color: theme.cardColor.withValues(alpha: 0.5),
-                          alignment: Alignment.center,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    )
-                  else if (!hasMembership)
-                    // Glassmorphic "Join" Overlay
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-                          child: Container(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surface.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.star_rounded,
-                                    color: Colors.amber,
-                                    size: 28,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Upgrade to Member',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.surface,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Get free towing & priority rescue',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.surface.withValues(alpha: 0.7),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () => context.go('/membership'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: theme.colorScheme.surface,
-                                      foregroundColor: theme.colorScheme.onSurface,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 12,
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'View Plans',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              // BOLD ACTION POINT
-              const _EmergencyActionCard(),
-
-              const SizedBox(height: 32),
-
-              // MANAGE SECTION
-              Text(
-                'Account & Vehicle',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.onSurface,
-                  letterSpacing: -0.5,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(userProfileProvider);
+            ref.invalidate(vehiclesProvider);
+            await Future.wait([
+              ref.read(userProfileProvider.future),
+              ref.read(vehiclesProvider.future),
+            ]);
+          },
+          color: theme.colorScheme.onSurface,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 110),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                userProfileAsync.when(
+                  loading: () => const _HeaderSkeleton(),
+                  error: (_, __) => _HeaderSection(userName: 'Driver', onProfileTap: () => context.push('/profile')),
+                  data: (profile) => _HeaderSection(
+                    userName: profile.firstName, 
+                    avatarUrl: profile.avatarUrl,
+                    onProfileTap: () => context.push('/profile')
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                
+                // --- Smart Contextual Greeting ---
+                const _SmartAssistantCard().animate().fadeIn(duration: 500.ms).slideX(begin: 0.1, end: 0),
+                const SizedBox(height: 28),
 
-              // Utility Grid
-              const _UtilityGrid().animate().fade(duration: 600.ms, delay: 200.ms).slideY(begin: 0.1, end: 0),
-            ],
+                primaryVehicleAsync.when(
+                  loading: () => const _VehicleCardSkeleton(),
+                  error: (_, __) => _PrimaryVehicleCard(
+                    vehicle: null,
+                    loading: false,
+                    onTap: () => context.pushNamed('garage-add'),
+                    onAddVehicle: () => context.pushNamed('garage-add'),
+                  ),
+                  data: (vehicle) => _PrimaryVehicleCard(
+                    vehicle: vehicle,
+                    loading: false,
+                    onTap: () {
+                      if (vehicle != null) {
+                        context.pushNamed('vehicle-detail', pathParameters: {'id': vehicle.id});
+                      } else {
+                        context.pushNamed('garage-add');
+                      }
+                    },
+                    onAddVehicle: () => context.pushNamed('garage-add'),
+                  ).animate().fade(duration: 600.ms).slideY(begin: 0.1, end: 0),
+                ),
+                const SizedBox(height: 32),
+                
+                Text(
+                  'QUICK ACCESS',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.grey.withValues(alpha: 0.8), letterSpacing: 1.2),
+                ),
+                const SizedBox(height: 16),
+                const _QuickActionsGrid().animate().fade(duration: 600.ms, delay: 150.ms).slideY(begin: 0.1, end: 0),
+                const SizedBox(height: 32),
+                const _EmergencyActionCard(),
+              ],
+            ),
           ),
         ),
       ),
@@ -279,121 +92,139 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// SUB-COMPONENTS
-// -----------------------------------------------------------------------------
+class _SmartAssistantCard extends StatelessWidget {
+  const _SmartAssistantCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: Colors.blueAccent.withValues(alpha: 0.15), shape: BoxShape.circle),
+            child: const Icon(Icons.auto_awesome_rounded, color: Colors.blueAccent, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Safe travel, Max!', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                Text('Road conditions are clear today.', style: TextStyle(color: Colors.grey.withValues(alpha: 0.8), fontSize: 11, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          Text('28°C', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: theme.colorScheme.onSurface)),
+          const SizedBox(width: 4),
+          const Icon(Icons.wb_sunny_rounded, color: Colors.amber, size: 16),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeaderSkeleton extends StatelessWidget {
+  const _HeaderSkeleton();
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(width: 100, height: 14, color: Colors.white10),
+            const SizedBox(height: 8),
+            Container(width: 180, height: 32, color: Colors.white10),
+          ],
+        ),
+        Container(width: 52, height: 52, decoration: const BoxDecoration(color: Colors.white10, shape: BoxShape.circle)),
+      ],
+    );
+  }
+}
+
+class _VehicleCardSkeleton extends StatelessWidget {
+  const _VehicleCardSkeleton();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 180,
+      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(20)),
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24)),
+    );
+  }
+}
 
 class _HeaderSection extends StatelessWidget {
   final String userName;
+  final String? avatarUrl;
   final VoidCallback onProfileTap;
 
-  const _HeaderSection({required this.userName, required this.onProfileTap});
-
-  // Determine greeting based on time of day
-  (String, IconData, Color) _getGreetingData() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return ('Good Morning', Icons.wb_sunny_rounded, Colors.orange);
-    } else if (hour < 17) {
-      return ('Good Afternoon', Icons.wb_cloudy_rounded, Colors.orange);
-    } else {
-      return ('Good Evening', Icons.nights_stay_rounded, Colors.indigoAccent);
-    }
-  }
+  const _HeaderSection({required this.userName, this.avatarUrl, required this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final motTheme = theme.extension<MotorAmbosTheme>()!;
-    final (greetingText, greetingIcon, iconColor) = _getGreetingData();
     final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(greetingIcon, size: 16, color: iconColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    greetingText,
-                    style: TextStyle(
-                      color: motTheme.slateText, // Slate 500
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                userName,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface, // Slate 900
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8, height: 8,
+                  decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                ).animate(onPlay: (c) => c.repeat()).fade(duration: 800.ms, begin: 0.3, end: 1.0),
+                const SizedBox(width: 8),
+                Text(
+                  'READY TO ROLL',
+                  style: TextStyle(color: Colors.green, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.2),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              userName,
+              style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1.2),
+            ),
+          ],
         ),
-
-        // Profile Avatar Button
         GestureDetector(
           onTap: onProfileTap,
           child: Container(
-            height: 50,
-            width: 50,
+            height: 54,
+            width: 54,
             decoration: BoxDecoration(
               color: theme.cardColor,
               shape: BoxShape.circle,
-              border: Border.all(color: motTheme.subtleBorder, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              border: Border.all(color: motTheme.subtleBorder, width: 2),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 15, offset: const Offset(0, 5))],
+              image: avatarUrl != null
+                  ? DecorationImage(
+                      image: CachedNetworkImageProvider(avatarUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
             alignment: Alignment.center,
-            child: Stack(
-              children: [
-                Center(
-                  child: Text(
-                    initial,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-                // Notification/Active Badge
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.error,
-                      // Red for alert, or Green for status
-                      shape: BoxShape.circle,
-                      border: Border.all(color: theme.cardColor, width: 1.5),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: avatarUrl == null
+                ? Text(initial, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface))
+                : null,
           ),
         ),
       ],
@@ -401,183 +232,229 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-class _MembershipCard extends StatelessWidget {
-  final String tier;
-  final String membershipId;
-  final DateTime expiryDate;
-  final int callsUsedThisYear;
-  final double estimatedSavings;
+class _PrimaryVehicleCard extends StatelessWidget {
+  final Vehicle? vehicle;
+  final bool loading;
+  final VoidCallback onTap;
+  final VoidCallback onAddVehicle;
 
-  const _MembershipCard({
-    required this.tier,
-    required this.membershipId,
-    required this.expiryDate,
-    required this.callsUsedThisYear,
-    required this.estimatedSavings,
-  });
+  const _PrimaryVehicleCard({required this.vehicle, required this.loading, required this.onTap, required this.onAddVehicle});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+    const cardBg = Color(0xFF0F172A);
 
-    // Note: Membership card usually keeps a specific dark look even in light mode,
-    // or we can make it adapt. For now, I'll keep it dark/navy as a "premium" card look,
-    // but use theme colors where appropriate if we want it to switch.
-    // However, credit cards often have fixed colors.
-    // Let's stick to the "Dark Navy" look for the card itself as it's a brand element,
-    // but we can use theme values if we want it to invert in dark mode.
-    // Given the design, a dark card looks good on both light and dark backgrounds.
-    // I will keep the hardcoded dark color for the card background to maintain the "Physical Card" look,
-    // but ensure text contrasts correctly.
+    if (loading) {
+      return Container(
+        width: double.infinity,
+        height: 180,
+        decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(12)),
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24)),
+      );
+    }
 
-    final cardBg = const Color(0xFF0F172A); // Keep fixed for card identity
-    final cardText = Colors.white;
-
-    final expiryText =
-        '${expiryDate.month.toString().padLeft(2, '0')}/${expiryDate.year.toString().substring(2)}';
-
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 260),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: cardBg.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    if (vehicle == null) {
+      return GestureDetector(
+        onTap: onAddVehicle,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: motTheme.subtleBorder),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
             children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.shield_outlined,
-                    color: cardText,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'MotorAmbos',
-                    style: TextStyle(
-                      color: cardText.withValues(alpha: 0.9),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: cardText.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  tier,
-                  style: TextStyle(
-                    color: cardText,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: theme.colorScheme.onSurface.withValues(alpha: 0.15), shape: BoxShape.circle),
+                child: Icon(Icons.add_rounded, size: 30, color: theme.colorScheme.primary),
               ),
+              const SizedBox(height: 16),
+              Text('Register Vehicle', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
+              const SizedBox(height: 4),
+              Text('Unlock digital documents & rescue', style: TextStyle(fontSize: 12, color: motTheme.slateText, fontWeight: FontWeight.w500)),
             ],
           ),
+        ),
+      );
+    }
 
-          const SizedBox(height: 32),
-
-          Row(
+    final v = vehicle!;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.45), blurRadius: 30, offset: const Offset(0, 15))],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
             children: [
-              _CardStat(value: '$callsUsedThisYear', label: 'Calls Used', textColor: cardText),
-              Container(
-                height: 32,
-                width: 1,
-                color: cardText.withValues(alpha: 0.1),
-                margin: const EdgeInsets.symmetric(horizontal: 24),
+              // Top-right Glow Decor
+              Positioned(
+                top: -30, right: -30,
+                child: Container(
+                  width: 120, height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
-              _CardStat(
-                value: 'GHS ${estimatedSavings.toStringAsFixed(0)}',
-                label: 'Saved',
-                textColor: cardText,
+              
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.shield_rounded, color: Colors.blueAccent, size: 12),
+                              const SizedBox(width: 6),
+                              Text('PROTECTED', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.more_horiz_rounded, color: Colors.white.withValues(alpha: 0.45)),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Hero(
+                      tag: 'label-${v.id}',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Text(
+                          v.displayLabel, 
+                          style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.8)
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (v.plate != null && v.plate!.isNotEmpty)
+                      Hero(
+                        tag: 'plate-${v.id}',
+                        child: GhanaNumberPlate(plateNumber: v.plate!, height: 74),
+                      ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _StatItem(label: 'MAKE', value: v.make ?? '---'),
+                          Container(width: 1, height: 20, color: Colors.white.withValues(alpha: 0.12)),
+                          _StatItem(label: 'YEAR', value: v.year ?? '---'),
+                          Container(width: 1, height: 20, color: Colors.white.withValues(alpha: 0.12)),
+                          _StatItem(
+                            label: 'HEALTH', 
+                            value: '${v.healthScore.toInt()}%', 
+                            valueColor: v.healthScore > 80 ? Colors.green : (v.healthScore > 50 ? Colors.orangeAccent : Colors.redAccent)
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    membershipId,
-                    style: TextStyle(
-                      color: cardText,
-                      fontFamily: 'Courier',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Exp $expiryText',
-                    style: TextStyle(
-                      color: cardText.withValues(alpha: 0.5),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-              Icon(Icons.nfc, color: cardText.withValues(alpha: 0.3), size: 32),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _CardStat extends StatelessWidget {
-  final String value;
+class _StatItem extends StatelessWidget {
   final String label;
-  final Color textColor;
-
-  const _CardStat({required this.value, required this.label, required this.textColor});
+  final String value;
+  final Color? valueColor;
+  const _StatItem({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(color: textColor.withValues(alpha: 0.6), fontSize: 11),
-        ),
+        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(color: valueColor ?? Colors.white, fontSize: 13, fontWeight: FontWeight.w900)),
       ],
+    );
+  }
+}
+
+class _QuickActionsGrid extends StatelessWidget {
+  const _QuickActionsGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.25,
+      children: [
+        _QuickAction(icon: Icons.garage_rounded, label: 'My Garage', color: Colors.blueAccent, onTap: () => context.go('/garage')),
+        _QuickAction(icon: Icons.history_edu_rounded, label: 'History', color: Colors.purpleAccent, onTap: () => context.go('/activity')),
+        _QuickAction(icon: Icons.vignette_rounded, label: 'Club Shop', color: Colors.orangeAccent, onTap: () => context.go('/membership')),
+        _QuickAction(icon: Icons.support_agent_rounded, label: 'Support', color: Colors.tealAccent, onTap: () => context.go('/assist')),
+      ],
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({required this.icon, required this.label, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final motTheme = theme.extension<MotorAmbosTheme>()!;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: motTheme.subtleBorder),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            Text(label, style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, fontSize: 14, letterSpacing: -0.2)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -589,186 +466,40 @@ class _EmergencyActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 160,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEF4444), Color(0xFFB91C1C)], // Red gradient
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFEF4444).withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        gradient: const LinearGradient(colors: [Color(0xFFEF4444), Color(0xFFC2410C)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: const Color(0xFFEF4444).withValues(alpha: 0.45), blurRadius: 25, offset: const Offset(0, 10))],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.go('/assist'),
-          borderRadius: BorderRadius.circular(24),
+          onTap: () => context.push('/sos'),
+          borderRadius: BorderRadius.circular(18),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: const Text(
-                          '24/7 SUPPORT',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Request Help',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          height: 1.0,
-                        ),
-                      ),
+                      const Text('EMERGENCY SOS', style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2.0)),
+                      const SizedBox(height: 10),
+                      const Text('Request Rescue', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.6)),
                       const SizedBox(height: 6),
-                      Text(
-                        'Towing, Battery, Fuel & More',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text('Towing, Fuel & Mechanical Rescue', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
                 Container(
-                  width: 60,
                   height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Color(0xFFEF4444),
-                    size: 30,
-                  ),
+                  width: 60,
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), shape: BoxShape.circle),
+                  child: const Center(child: Icon(Icons.flash_on_rounded, color: Colors.white, size: 30)),
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UtilityGrid extends StatelessWidget {
-  const _UtilityGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _UtilityCard(
-            icon: Icons.directions_car_filled_rounded,
-            label: 'My Garage',
-            onTap: () => context.go('/garage'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _UtilityCard(
-            icon: Icons.history_rounded,
-            label: 'History',
-            onTap: () => context.push('/history'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _UtilityCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _UtilityCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final motTheme = theme.extension<MotorAmbosTheme>()!;
-
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: motTheme.subtleBorder),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: motTheme.inputBg,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 18, color: theme.colorScheme.onSurface),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
           ),
         ),
       ),

@@ -55,7 +55,7 @@ class MembershipPlansScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -139,13 +139,13 @@ class _PlanCard extends StatelessWidget {
           margin: isRecommended ? const EdgeInsets.only(top: 12) : EdgeInsets.zero,
           decoration: BoxDecoration(
             color: theme.cardColor,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(18),
             border: isRecommended
                 ? Border.all(color: color, width: 2)
                 : Border.all(color: motTheme.subtleBorder),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
@@ -155,7 +155,7 @@ class _PlanCard extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(18),
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
@@ -167,7 +167,7 @@ class _PlanCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.1),
+                            color: color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(

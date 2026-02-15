@@ -1,0 +1,10 @@
+Analyzing Motor_Ambos...                                        
+
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/assist/presentation/assist_screen.dart:635:73 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:58:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:61:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:67:33 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:105:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/src/features/garage/presentation/widgets/ghana_number_plate.dart:118:45 • deprecated_member_use
+
+6 issues found. (ran in 2.2s)

@@ -7,6 +7,8 @@ class AuthService {
 
   final SupabaseClient _client = Supabase.instance.client;
 
+  // ── Email auth ──────────────────────────────────────────────────────
+
   /// Email/password sign-up
   Future<AuthResponse> signUpWithEmail({
     required String email,
@@ -37,6 +39,33 @@ class AuthService {
     return resp;
   }
 
+  // ── Phone / OTP auth ────────────────────────────────────────────────
+
+  /// Sign in (or sign up) with phone number using Supabase phone OTP.
+  ///
+  /// After calling this, Supabase will issue an OTP to the phone number.
+  /// Then call [verifyPhoneOtp] with the code the user received.
+  Future<void> signInWithPhone(String phone) async {
+    await _client.auth.signInWithOtp(phone: phone);
+  }
+
+  /// Verify the OTP code that Supabase sent to [phone].
+  ///
+  /// On success a session is created and the user is logged in.
+  Future<AuthResponse> verifyPhoneOtp({
+    required String phone,
+    required String code,
+  }) async {
+    final resp = await _client.auth.verifyOTP(
+      phone: phone,
+      token: code,
+      type: OtpType.sms,
+    );
+    return resp;
+  }
+
+  // ── OAuth ───────────────────────────────────────────────────────────
+
   /// Google OAuth sign-in
   ///
   /// On mobile, make sure your redirect URL is configured in Supabase & app.
@@ -48,8 +77,15 @@ class AuthService {
     );
   }
 
+  // ── General ─────────────────────────────────────────────────────────
+
   Future<void> signOut() async {
     await _client.auth.signOut();
+  }
+
+  /// Update the current user's metadata (e.g. full_name after phone login).
+  Future<void> updateUserMetadata(Map<String, dynamic> data) async {
+    await _client.auth.updateUser(UserAttributes(data: data));
   }
 
   Session? get currentSession => _client.auth.currentSession;
